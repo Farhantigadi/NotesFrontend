@@ -1,0 +1,152 @@
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronRight, Edit2, Trash2, ChevronLeft, ChevronRightIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Layout } from '../components/layout/Layout';
+import { QuestionDialog } from '../components/dialogs/QuestionDialog';
+import { ConfirmDialog } from '../components/shared/ConfirmDialog';
+import { CodeBlock } from '../components/shared/CodeBlock';
+import { LoadingSpinner } from '../components/shared/LoadingSpinner';
+import { useQuestion, useQuestionsBySubSection, useDeleteQuestion, useUpdateQuestion } from '../hooks/useQuestions';
+import { useSubSection } from '../hooks/useSubSections';
+import { useEditMode } from '../contexts/EditModeContext';
+
+export function QuestionDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { isEditMode } = useEditMode();
+  const questionId = Number(id);
+
+  const { data: question, isLoading: questionLoading } = useQuestion(questionId);
+  const { data: subSection, isLoading: subSectionLoading } = useSubSection(question?.subSectionId || 0);
+  const { data: siblingQuestions } = useQuestionsBySubSection(question?.subSectionId || 0);
+  const deleteMutation = useDeleteQuestion();
+  const updateMutation = useUpdateQuestion(questionId);
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const currentIndex = siblingQuestions?.findIndex((q) => q.id === questionId) ?? -1;
+  const previousQuestion = currentIndex > 0 ? siblingQuestions[currentIndex - 1] : null;
+  const nextQuestion = currentIndex < (siblingQuestions?.length ?? 1) - 1 ? siblingQuestions[currentIndex + 1] : null;
+
+  const handleConfirmDelete = async () => {
+    await deleteMutation.mutateAsync(questionId);
+    navigate(-1);
+  };
+
+  const handleFormSubmit = async (data) => {
+    await updateMutation.mutateAsync(data);
+    setIsEditDialogOpen(false);
+  };
+
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === 'ArrowLeft' && previousQuestion) {
+        navigate(`/questions/${previousQuestion.id}`);
+      } else if (e.key === 'ArrowRight' && nextQuestion) {
+        navigate(`/questions/${nextQuestion.id}`);
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [previousQuestion, nextQuestion, navigate]);
+
+  if (questionLoading || subSectionLoading) {
+    return <Layout><LoadingSpinner /></Layout>;
+  }
+
+  if (!question || !subSection) {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <p className="text-gray-600">Question not found</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <article className="max-w-4xl mx-auto">
+        <div className="text-sm text-gray-600 flex items-center gap-2 mb-8">
+          <button onClick={() => navigate('/sections')} className="hover:text-accent">Sections</button>
+          <ChevronRight size={16} />
+          <span>{subSection.mainSectionTitle}</span>
+          <ChevronRight size={16} />
+          <button onClick={() => navigate(`/subsections/${subSection.id}`)} className="hover:text-accent">
+            {subSection.title}
+          </button>
+          <ChevronRight size={16} />
+          <span className="text-accent font-semibold">{question.title}</span>
+        </div>
+
+        <div className="flex items-start justify-between mb-8">
+          <h1 className="text-5xl font-bold text-accent reading-content font-serif">{question.title}</h1>
+          {isEditMode && (
+            <div className="flex gap-2 ml-4">
+              <button onClick={() => setIsEditDialogOpen(true)} className="p-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
+                <Edit2 size={20} />
+              </button>
+              <button onClick={() => setDeleteConfirm(true)} className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                <Trash2 size={20} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {question.answer && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-accent mb-4">Answer</h2>
+            <div className="content-area-bg rounded-lg p-6 border border-gray-200 reading-content">{question.answer}</div>
+          </section>
+        )}
+
+        {question.codeSnippet && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-accent mb-4">Code Example</h2>
+            <CodeBlock code={question.codeSnippet} language={question.codeLanguage || 'javascript'} />
+          </section>
+        )}
+
+        {question.explanation && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-accent mb-4">Explanation</h2>
+            <div className="content-area-bg rounded-lg p-6 border border-gray-200 reading-content">{question.explanation}</div>
+          </section>
+        )}
+
+        <div className="flex gap-4 mt-16 pt-8 border-t border-gray-200">
+          {previousQuestion ? (
+            <button onClick={() => navigate(`/questions/${previousQuestion.id}`)} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
+              <ChevronLeft size={18} /> Previous Question
+            </button>
+          ) : <div />}
+          {nextQuestion ? (
+            <button onClick={() => navigate(`/questions/${nextQuestion.id}`)} className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white hover:bg-opacity-90 transition-colors">
+              Next Question <ChevronRightIcon size={18} />
+            </button>
+          ) : <div className="ml-auto" />}
+        </div>
+      </article>
+
+      <QuestionDialog
+        isOpen={isEditDialogOpen}
+        question={question}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSubmit={handleFormSubmit}
+        isLoading={updateMutation.isPending}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteConfirm}
+        title="Delete Question"
+        message="Are you sure you want to delete this question?"
+        confirmText="Delete"
+        isDangerous
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm(false)}
+        isLoading={deleteMutation.isPending}
+      />
+    </Layout>
+  );
+}
