@@ -204,7 +204,7 @@ function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, on
   const [codeExpanded, setCodeExpanded] = useState(false);
 
   return (
-    <article style={{ paddingTop: '64px', paddingBottom: '64px', borderBottom: index < total - 1 ? '1px solid var(--paper-border)' : 'none' }}>
+    <article style={{ paddingTop: '32px', paddingBottom: '32px', borderBottom: index < total - 1 ? '1px solid var(--paper-border)' : 'none' }}>
 
       {/* Edit controls row — only in edit mode */}
       {isEditMode && (

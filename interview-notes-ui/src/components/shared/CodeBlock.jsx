@@ -80,9 +80,8 @@ export function CodeBlock({ code, language = 'javascript', maxLines, onToggle, e
               onMouseEnter={e => e.currentTarget.style.color = '#cdd6f4'}
               onMouseLeave={e => e.currentTarget.style.color = '#6c7086'}
             > 
-              <span>Show less</span>
-              <ChevronUp size={14} />
-
+              <span>Show less ⏶</span>
+ 
             </button>
           </div>
         )}

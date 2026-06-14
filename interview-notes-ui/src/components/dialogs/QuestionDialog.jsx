@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, Image, GitFork } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useSubSections } from '../../hooks/useSubSections';
 import { ImageUploader } from '../shared/ImageUploader';
 import { DiagramEditor } from '../shared/DiagramEditor';
@@ -102,178 +102,123 @@ export function QuestionDialog({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onClose} />
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40, backdropFilter: 'blur(2px)' }} onClick={onClose} />
 
       {/* Dialog */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 max-h-[90vh] overflow-y-auto">
-        <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {question ? 'Edit Question' : 'Add Question'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X size={24} />
+      <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 50, width: '90vw', maxWidth: '780px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '16px', boxShadow: '0 24px 64px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid #f0ede8', flexShrink: 0 }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1c1c1c', letterSpacing: '-0.01em' }}>
+            {question ? 'Edit Question' : 'Add Question'}
+          </h2>
+          <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '8px', border: 'none', background: 'none', color: '#a8a29e', cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f5f0e8'; e.currentTarget.style.color = '#1c1c1c'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#a8a29e'; }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '4px', padding: '12px 28px 0', borderBottom: '1px solid #f0ede8', flexShrink: 0 }}>
+          {[{ id: 'main', label: 'Content' }, { id: 'image', label: '🖼 Image' }, { id: 'diagram', label: '🔷 Diagram' }].map(t => (
+            <button key={t.id} type="button" onClick={() => setActiveTab(t.id)}
+              style={{ padding: '8px 16px', fontSize: '13px', fontWeight: activeTab === t.id ? 600 : 400, color: activeTab === t.id ? '#92400e' : '#a8a29e', background: activeTab === t.id ? '#fdf8f0' : 'none', border: 'none', borderRadius: '8px 8px 0 0', borderBottom: activeTab === t.id ? '2px solid #92400e' : '2px solid transparent', cursor: 'pointer', marginBottom: '-1px', transition: 'all 0.15s' }}>
+              {t.label}
             </button>
-          </div>
+          ))}
+        </div>
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--paper-border)', padding: '0 24px' }}>
-            {[
-              { id: 'main',    label: 'Content' },
-              { id: 'image',   label: '🖼 Image',   Icon: Image },
-              { id: 'diagram', label: '🔷 Diagram', Icon: GitFork },
-            ].map(t => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setActiveTab(t.id)}
-                style={{ padding: '10px 14px', fontSize: '13px', fontWeight: activeTab === t.id ? 600 : 400, color: activeTab === t.id ? 'var(--accent)' : 'var(--text-muted)', background: 'none', border: 'none', borderBottom: activeTab === t.id ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer', marginBottom: '-1px' }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+        {/* Scrollable body */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          <form onSubmit={handleSubmit(handleFormSubmit)}>
+            <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-4">
-            {/* ── Main tab ── */}
-            {activeTab === 'main' && (<>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SubSection *</label>
-              <select
-                {...register('subSectionId', { valueAsNumber: true })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-              >
-                <option value="">Select a subsection</option>
-                {subSections?.map((subSection) => (
-                  <option key={subSection.id} value={subSection.id}>
-                    {subSection.mainSectionTitle} &gt; {subSection.title}
-                  </option>
-                ))}
-              </select>
-              {errors.subSectionId && (
-                <p className="text-red-500 text-sm mt-1">{errors.subSectionId.message}</p>
+              {activeTab === 'main' && (<>
+
+                {/* SubSection */}
+                <div>
+                  <label style={labelStyle}>Topic *</label>
+                  <select {...register('subSectionId', { valueAsNumber: true })} style={inputStyle}>
+                    <option value="">Select a topic</option>
+                    {subSections?.map(s => (
+                      <option key={s.id} value={s.id}>{s.mainSectionTitle} › {s.title}</option>
+                    ))}
+                  </select>
+                  {errors.subSectionId && <p style={errorStyle}>{errors.subSectionId.message}</p>}
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label style={labelStyle}>Question Title *</label>
+                  <input {...register('title')} type="text" placeholder="e.g. What is polymorphism?" style={inputStyle} />
+                  {errors.title && <p style={errorStyle}>{errors.title.message}</p>}
+                </div>
+
+                {/* Answer */}
+                <div>
+                  <label style={labelStyle}>Answer</label>
+                  <textarea {...register('answer')} placeholder="Write the answer here..." rows={5} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7 }} />
+                </div>
+
+                {/* Code Language + Code Snippet side label */}
+                <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: '16px', alignItems: 'flex-start' }}>
+                  <div>
+                    <label style={labelStyle}>Code Language</label>
+                    <select {...register('codeLanguage')} style={inputStyle}>
+                      <option value="">Select language</option>
+                      {codeLanguages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '1px' }}>
+                    <p style={{ fontSize: '12px', color: '#a8a29e', lineHeight: 1.5 }}>Choose the language before pasting your code snippet below.</p>
+                  </div>
+                </div>
+
+                {/* Code Snippet */}
+                <div>
+                  <label style={labelStyle}>Code Snippet</label>
+                  <textarea {...register('codeSnippet')} placeholder="Paste your code here..." rows={8}
+                    style={{ ...inputStyle, fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace", fontSize: '13px', lineHeight: 1.8, resize: 'vertical', background: '#1e1e2e', color: '#cdd6f4', borderColor: '#313244' }} />
+                </div>
+
+                {/* Explanation */}
+                <div>
+                  <label style={labelStyle}>Explanation</label>
+                  <textarea {...register('explanation')} placeholder="Add any extra notes or explanation..." rows={4} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7 }} />
+                </div>
+
+              </>)}
+
+              {activeTab === 'image' && (
+                <div>
+                  <p style={{ fontSize: '13px', color: '#a8a29e', marginBottom: '16px' }}>Upload an image and set its display size. Stored locally in your browser.</p>
+                  <ImageUploader value={imageData} onChange={setImageData} />
+                </div>
               )}
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title *
-              </label>
-              <input
-                {...register('title')}
-                type="text"
-                placeholder="Enter question title"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-              {errors.title && (
-                <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
+              {activeTab === 'diagram' && (
+                <div>
+                  <p style={{ fontSize: '13px', color: '#a8a29e', marginBottom: '16px' }}>Build a flow diagram. Drag nodes, connect them with arrows. Stored locally.</p>
+                  <DiagramEditor value={diagramData} onChange={setDiagramData} />
+                </div>
               )}
+
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Answer
-              </label>
-              <textarea
-                {...register('answer')}
-                placeholder="Enter the answer"
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-              {errors.answer && (
-                <p className="text-red-500 text-sm mt-1">{errors.answer.message}</p>
-              )}
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Code Language
-                </label>
-                <select
-                  {...register('codeLanguage')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                >
-                  <option value="">Select language</option>
-                  {codeLanguages.map((lang) => (
-                    <option key={lang} value={lang}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Code Snippet
-              </label>
-              <textarea
-                {...register('codeSnippet')}
-                placeholder="Enter code snippet"
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent font-mono text-sm"
-              />
-              {errors.codeSnippet && (
-                <p className="text-red-500 text-sm mt-1">{errors.codeSnippet.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Explanation
-              </label>
-              <textarea
-                {...register('explanation')}
-                placeholder="Enter explanation"
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-              {errors.explanation && (
-                <p className="text-red-500 text-sm mt-1">{errors.explanation.message}</p>
-              )}
-            </div>
-            </>)}
-
-            {/* ── Image tab ── */}
-            {activeTab === 'image' && (
-              <div>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
-                  Upload an image and set its display size. Stored locally in your browser.
-                </p>
-                <ImageUploader value={imageData} onChange={setImageData} />
-              </div>
-            )}
-
-            {/* ── Diagram tab ── */}
-            {activeTab === 'diagram' && (
-              <div>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
-                  Build a flow diagram. Drag nodes, connect them with arrows. Stored locally.
-                </p>
-                <DiagramEditor value={diagramData} onChange={setDiagramData} />
-              </div>
-            )}
 
             {/* Footer */}
-            <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isLoading}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '16px 28px', borderTop: '1px solid #f0ede8', background: '#faf9f7', flexShrink: 0 }}>
+              <button type="button" onClick={onClose} disabled={isLoading}
+                style={{ padding: '9px 20px', borderRadius: '8px', border: '1px solid #e0dbd2', background: '#fff', color: '#3c3836', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f5f0e8'}
+                onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50"
-              >
-                {isLoading ? 'Saving...' : 'Save'}
+              <button type="submit" disabled={isLoading}
+                style={{ padding: '9px 24px', borderRadius: '8px', border: 'none', background: '#92400e', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: isLoading ? 0.6 : 1 }}
+                onMouseEnter={e => { if (!isLoading) e.currentTarget.style.background = '#78350f'; }}
+                onMouseLeave={e => e.currentTarget.style.background = '#92400e'}>
+                {isLoading ? 'Saving...' : 'Save Question'}
               </button>
             </div>
           </form>
@@ -282,3 +227,7 @@ export function QuestionDialog({
     </>
   );
 }
+
+const labelStyle = { display: 'block', fontSize: '12px', fontWeight: 600, color: '#6b6b6b', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '6px' };
+const inputStyle = { width: '100%', padding: '10px 14px', border: '1px solid #e0dbd2', borderRadius: '8px', fontSize: '14px', color: '#1c1c1c', background: '#fff', outline: 'none', fontFamily: 'inherit' };
+const errorStyle = { fontSize: '12px', color: '#ef4444', marginTop: '4px' };
