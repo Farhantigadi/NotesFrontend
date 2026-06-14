@@ -36,11 +36,11 @@ export const useCreateSubSection = () => {
   });
 };
 
-export const useUpdateSubSection = (id) => {
+export const useUpdateSubSection = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data) => subSectionsApi.updateSubSection(id, data),
-    onSuccess: (updatedSubSection) => {
+    mutationFn: ({ id, data }) => subSectionsApi.updateSubSection(id, data),
+    onSuccess: (updatedSubSection, { id }) => {
       queryClient.setQueryData([SUBSECTIONS_QUERY_KEY, id], updatedSubSection);
       queryClient.invalidateQueries({ queryKey: [SUBSECTIONS_QUERY_KEY] });
     },

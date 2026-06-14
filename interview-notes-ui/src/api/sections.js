@@ -21,4 +21,7 @@ export const sectionsApi = {
       axiosInstance.put(`/api/sections/${id}`, { title, displayOrder })
     ));
   },
+  deleteSection: async (id) => {
+    return axiosInstance.delete(`/api/sections/${id}`);
+  },
 };

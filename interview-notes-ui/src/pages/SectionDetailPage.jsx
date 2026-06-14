@@ -18,7 +18,7 @@ export function SectionDetailPage() {
   const { data: section, isLoading: sectionLoading } = useSection(sectionId);
   const { data: subSections, isLoading: subSectionsLoading } = useSubSectionsBySection(sectionId);
   const createMutation = useCreateSubSection();
-  const updateMutation = useUpdateSubSection(0);
+  const updateMutation = useUpdateSubSection();
   const deleteMutation = useDeleteSubSection();
   const reorderMutation = useReorderSubSections(sectionId);
 
@@ -62,7 +62,7 @@ export function SectionDetailPage() {
 
   const handleFormSubmit = async (data) => {
     if (editingId) {
-      await updateMutation.mutateAsync(data);
+      await updateMutation.mutateAsync({ id: editingId, data });
     } else {
       await createMutation.mutateAsync(data);
     }

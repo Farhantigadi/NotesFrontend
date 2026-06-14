@@ -16,6 +16,9 @@ export const subSectionsApi = {
   updateSubSection: async (id, data) => {
     return axiosInstance.put(`/api/subsections/${id}`, data);
   },
+  deleteSubSection: async (id) => {
+    return axiosInstance.delete(`/api/subsections/${id}`);
+  },
   reorderSubSections: async (updates) => {
     return Promise.all(updates.map(({ id, title, mainSectionId, displayOrder }) =>
       axiosInstance.put(`/api/subsections/${id}`, { title, mainSectionId, displayOrder })
