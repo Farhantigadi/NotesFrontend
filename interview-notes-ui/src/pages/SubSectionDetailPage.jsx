@@ -102,45 +102,42 @@ export function SubSectionDetailPage() {
         </nav>
 
         {/* Topic heading + delete topic button */}
-        <div className="mb-10">
+        <div style={{ marginBottom: '56px' }}>
           <div className="flex items-start justify-between gap-4">
-            <h1 style={{ fontFamily: SERIF, fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.25, letterSpacing: '-0.02em', margin: '42.8px 0 -9.2px' }}>
+            <h1 style={{ fontFamily: SERIF, fontSize: '42px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2, letterSpacing: '-0.025em', margin: 0 }}>
               {subSection.title}
             </h1>
             {isEditMode && (
               <button
                 onClick={() => setDeleteTopicConfirm(true)}
                 className="btn-ghost flex-shrink-0"
-                style={{ color: 'var(--danger)', marginTop: '44px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}
+                style={{ color: 'var(--danger)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}
               >
                 <Trash2 size={14} /> Delete Topic
               </button>
             )}
           </div>
           {subSection.description && (
-            <p style={{ fontFamily: SERIF, fontSize: '20px', lineHeight: 1.8, color: 'var(--text-secondary)', marginTop: '20px' }}>
+            <p style={{ fontFamily: SERIF, fontSize: '18px', lineHeight: 1.8, color: 'var(--text-secondary)', marginTop: '16px' }}>
               {subSection.description}
             </p>
           )}
         </div>
 
         {/* Questions header */}
-        <div className="flex items-center justify-between mb-6">
-          <span style={{ fontFamily: SERIF, fontSize: '26px', fontWeight: 700, color: 'var(--text-muted)', margin: '42.8px 0 -9.2px', display: 'block' }}>
-            {questions?.length || 0} Questions
-          </span>
-          {isEditMode && (
+        {isEditMode && (
+          <div className="flex items-center justify-end" style={{ marginBottom: '16px' }}>
             <button onClick={handleAddQuestion} className="btn-primary" style={{ fontSize: '12px', padding: '5px 12px' }}>
               <Plus size={13} /> Add Question
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Questions list */}
         {questionsLoading ? (
           <LoadingSpinner />
         ) : sortedQuestions.length > 0 ? (
-          <div style={{ marginTop: '24px' }}>
+          <div>
             {sortedQuestions.map((question, index) => (
               <QuestionItem
                 key={question.id}
@@ -205,37 +202,34 @@ export function SubSectionDetailPage() {
 
 function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, onMoveUp, onMoveDown, isEditMode, isReordering }) {
   const [codeExpanded, setCodeExpanded] = useState(false);
-  const lines = question.codeSnippet?.split('\n') ?? [];
-  const previewLines = lines.slice(0, 7).join('\n');
-  const hasMore = lines.length > 7;
 
   return (
-    <article style={{ paddingTop: '40px', paddingBottom: '40px', borderBottom: index < total - 1 ? '1px solid var(--paper-border)' : 'none' }}>
+    <article style={{ paddingTop: '64px', paddingBottom: '64px', borderBottom: index < total - 1 ? '1px solid var(--paper-border)' : 'none' }}>
 
-      {/* Q label + edit controls */}
-      <div className="flex items-center justify-between mb-3">
-        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+      {/* Edit controls row — only in edit mode */}
+      {isEditMode && (
+        <div className="flex items-center justify-end gap-0.5 mb-2">
+          <button onClick={onMoveUp} disabled={index === 0 || isReordering} className="btn-ghost p-1" style={{ opacity: index === 0 ? 0.3 : 1 }}><ChevronUp size={13} /></button>
+          <button onClick={onMoveDown} disabled={index === total - 1 || isReordering} className="btn-ghost p-1" style={{ opacity: index === total - 1 ? 0.3 : 1 }}><ChevronDown size={13} /></button>
+          <button onClick={onEdit} className="btn-ghost p-1"><Edit2 size={13} /></button>
+          <button onClick={onDelete} className="btn-ghost p-1" style={{ color: 'var(--danger)' }}><Trash2 size={13} /></button>
+        </div>
+      )}
+
+      {/* Q{n} label inline left of title */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+        <span style={{ fontFamily: SERIF, fontSize: '24px', fontWeight: 700, color: 'var(--accent-muted)', flexShrink: 0 }}>
           Q{index + 1}
         </span>
-        {isEditMode && (
-          <div className="flex items-center gap-0.5">
-            <button onClick={onMoveUp} disabled={index === 0 || isReordering} className="btn-ghost p-1" style={{ opacity: index === 0 ? 0.3 : 1 }}><ChevronUp size={13} /></button>
-            <button onClick={onMoveDown} disabled={index === total - 1 || isReordering} className="btn-ghost p-1" style={{ opacity: index === total - 1 ? 0.3 : 1 }}><ChevronDown size={13} /></button>
-            <button onClick={onEdit} className="btn-ghost p-1"><Edit2 size={13} /></button>
-            <button onClick={onDelete} className="btn-ghost p-1" style={{ color: 'var(--danger)' }}><Trash2 size={13} /></button>
-          </div>
-        )}
+        <h2
+          style={{ fontFamily: SERIF, fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35, letterSpacing: '-0.015em', cursor: 'pointer', margin: 0 }}
+          onClick={onNavigate}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-primary)'}
+        >
+          {question.title}
+        </h2>
       </div>
-
-      {/* Question title — 24px bold serif */}
-      <h2
-        style={{ fontFamily: SERIF, fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35, letterSpacing: '-0.015em', margin: '42.8px 0 -9.2px', cursor: 'pointer' }}
-        onClick={onNavigate}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-primary)'}
-      >
-        {question.title}
-      </h2>
 
       {/* Answer — 20px serif */}
       {question.answer && (
@@ -246,41 +240,14 @@ function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, on
 
       {/* Code block */}
       {question.codeSnippet && (
-        <div style={{ marginBottom: '20px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--code-border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: 'var(--code-header)', borderBottom: '1px solid var(--code-border)' }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#636d83' }}>
-              {question.codeLanguage || 'code'}
-            </span>
-            {hasMore && (
-              <button
-                onClick={() => setCodeExpanded(v => !v)}
-                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#636d83', background: 'none', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#abb2bf'}
-                onMouseLeave={e => e.currentTarget.style.color = '#636d83'}
-              >
-                {codeExpanded ? <><ChevronUp size={13} /> Show less</> : <><ChevronDown size={13} /> Show more</>}
-              </button>
-            )}
-          </div>
-          {codeExpanded ? (
-            <CodeBlock code={question.codeSnippet} language={question.codeLanguage || 'java'} />
-          ) : (
-            <div>
-              <pre style={{ fontFamily: "'JetBrains Mono','Fira Code',Consolas,monospace", fontSize: '14px', lineHeight: 1.75, padding: '20px', margin: 0, overflowX: 'auto', color: '#abb2bf', background: 'var(--code-bg)', whiteSpace: 'pre' }}>
-                {previewLines}
-              </pre>
-              {hasMore && (
-                <button
-                  onClick={() => setCodeExpanded(true)}
-                  style={{ width: '100%', padding: '8px', fontSize: '12px', color: '#636d83', background: 'var(--code-header)', border: 'none', borderTop: '1px solid var(--code-border)', cursor: 'pointer' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#abb2bf'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#636d83'}
-                >
-                  + {lines.length - 7} more lines — click to expand
-                </button>
-              )}
-            </div>
-          )}
+        <div style={{ marginBottom: '20px' }}>
+          <CodeBlock
+            code={question.codeSnippet}
+            language={question.codeLanguage || 'java'}
+            maxLines={codeExpanded ? undefined : 7}
+            expanded={codeExpanded}
+            onToggle={() => setCodeExpanded(v => !v)}
+          />
         </div>
       )}
 
@@ -290,6 +257,61 @@ function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, on
           {question.explanation}
         </p>
       )}
+
+      {/* Image (localStorage) */}
+      {(() => {
+        const img = JSON.parse(localStorage.getItem(`q-image-${question.id}`) || 'null');
+        return img?.src ? (
+          <div style={{ marginTop: '20px' }}>
+            <img src={img.src} alt="attached" style={{ width: `${img.width}px`, height: `${img.height}px`, objectFit: 'contain', borderRadius: '8px', border: '1px solid var(--paper-border)' }} />
+          </div>
+        ) : null;
+      })()}
+
+      {/* Diagram (localStorage) */}
+      {(() => {
+        const diag = JSON.parse(localStorage.getItem(`q-diagram-${question.id}`) || 'null');
+        if (!diag?.nodes?.length) return null;
+        const { nodes, edges } = diag;
+        const maxX = Math.max(...nodes.map(n => n.x + n.w)) + 20;
+        const maxY = Math.max(...nodes.map(n => n.y + n.h)) + 20;
+        return (
+          <div style={{ marginTop: '20px', border: '1px solid var(--paper-border)', borderRadius: '10px', overflow: 'hidden' }}>
+            <svg width={Math.max(maxX, 300)} height={Math.max(maxY, 160)} style={{ display: 'block', background: 'var(--surface)' }}>
+              <defs>
+                <marker id={`arrow-${question.id}`} markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L8,3 z" fill="#a08060" />
+                </marker>
+                <pattern id={`grid-${question.id}`} width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="var(--paper-border)" strokeWidth="0.5" opacity="0.5" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill={`url(#grid-${question.id})`} />
+              {edges.map(e => {
+                const a = nodes.find(n => n.id === e.from);
+                const b = nodes.find(n => n.id === e.to);
+                if (!a || !b) return null;
+                const x1 = a.x + a.w / 2, y1 = a.y + a.h / 2;
+                const x2 = b.x + b.w / 2, y2 = b.y + b.h / 2;
+                const dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx*dx+dy*dy)||1;
+                return <line key={e.id} x1={x1} y1={y1} x2={x2-(dx/len)*(b.w/2+4)} y2={y2-(dy/len)*(b.h/2+4)} stroke="#a08060" strokeWidth={1.5} markerEnd={`url(#arrow-${question.id})`} />;
+              })}
+              {nodes.map(n => (
+                <g key={n.id} transform={`translate(${n.x},${n.y})`}>
+                  {n.shape === 'diamond'
+                    ? <polygon points={`${n.w/2},4 ${n.w-4},${n.h/2} ${n.w/2},${n.h-4} 4,${n.h/2}`} fill="var(--surface)" stroke="#c8b89a" strokeWidth={1.5} />
+                    : n.shape === 'circle'
+                    ? <ellipse cx={n.w/2} cy={n.h/2} rx={n.w/2-4} ry={n.h/2-4} fill="var(--surface)" stroke="#c8b89a" strokeWidth={1.5} />
+                    : <rect x={2} y={2} width={n.w-4} height={n.h-4} rx={6} fill="var(--surface)" stroke="#c8b89a" strokeWidth={1.5} />}
+                  <text x={n.w/2} y={n.h/2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: '12px', fontFamily: "'Inter',sans-serif", fill: 'var(--text-primary)', pointerEvents: 'none' }}>
+                    {n.label.length > 18 ? n.label.slice(0,17)+'…' : n.label}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          </div>
+        );
+      })()}
     </article>
   );
 }

@@ -5,7 +5,7 @@ import { Layout } from '../components/layout/Layout';
 import { SubSectionDialog } from '../components/dialogs/SubSectionDialog';
 import { ConfirmDialog } from '../components/shared/ConfirmDialog';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
-import { useSection } from '../hooks/useSections';
+import { useSection, useDeleteSection } from '../hooks/useSections';
 import { useSubSectionsBySection, useCreateSubSection, useUpdateSubSection, useDeleteSubSection, useReorderSubSections } from '../hooks/useSubSections';
 import { useEditMode } from '../contexts/EditModeContext';
 
@@ -21,6 +21,7 @@ export function SectionDetailPage() {
   const updateMutation = useUpdateSubSection();
   const deleteMutation = useDeleteSubSection();
   const reorderMutation = useReorderSubSections(sectionId);
+  const deleteSectionMutation = useDeleteSection();
 
   const sortedSubSections = useMemo(() => {
     if (!subSections) return [];
@@ -48,6 +49,7 @@ export function SectionDetailPage() {
   const [editingId, setEditingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
+  const [deleteSectionConfirm, setDeleteSectionConfirm] = useState(false);
 
   const handleAddSubSection = () => { setEditingId(null); setIsDialogOpen(true); };
   const handleEditSubSection = (id) => { setEditingId(id); setIsDialogOpen(true); };
@@ -58,6 +60,11 @@ export function SectionDetailPage() {
       await deleteMutation.mutateAsync(deleteConfirm.id);
       setDeleteConfirm({ isOpen: false, id: null });
     }
+  };
+
+  const handleConfirmDeleteSection = async () => {
+    await deleteSectionMutation.mutateAsync(sectionId);
+    navigate('/sections');
   };
 
   const handleFormSubmit = async (data) => {
@@ -82,6 +89,7 @@ export function SectionDetailPage() {
   return (
     <Layout onAddSubSection={handleAddSubSection}>
       <div className="space-y-8">
+        <div>
         <div className="text-sm text-gray-600 flex items-center gap-2">
           <button onClick={() => navigate('/sections')} className="hover:text-accent">Sections</button>
           <ChevronRight size={16} />
@@ -89,15 +97,28 @@ export function SectionDetailPage() {
         </div>
 
         <div>
-          <h1 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '36px', fontWeight: 700, color: '#242424', lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: '8px' }}>
-            {section.title}
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+            <h1 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '36px', fontWeight: 700, color: '#242424', lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: '8px' }}>
+              {section.title}
+            </h1>
+            {isEditMode && (
+              <button
+                onClick={() => setDeleteSectionConfirm(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', background: 'none', border: '1px solid #fca5a5', borderRadius: '7px', color: '#ef4444', fontSize: '13px', cursor: 'pointer', flexShrink: 0, marginTop: '6px' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+              >
+                <Trash2 size={14} /> Delete Section
+              </button>
+            )}
+          </div>
           {section.description && (
             <p style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '18px', lineHeight: 1.8, color: '#6b6b6b' }}>
               {section.description}
             </p>
           )}
         </div>
+      </div>
 
         <div>
           <div className="flex items-center justify-between mb-6">
@@ -157,6 +178,17 @@ export function SectionDetailPage() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteConfirm({ isOpen: false, id: null })}
         isLoading={deleteMutation.isPending}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteSectionConfirm}
+        title="Delete Section"
+        message={`Delete "${section.title}"? All topics and questions inside will be permanently deleted.`}
+        confirmText="Delete Section"
+        isDangerous
+        onConfirm={handleConfirmDeleteSection}
+        onCancel={() => setDeleteSectionConfirm(false)}
+        isLoading={deleteSectionMutation.isPending}
       />
     </Layout>
   );

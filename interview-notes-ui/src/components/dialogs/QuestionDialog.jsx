@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X } from 'lucide-react';
+import { X, Image, GitFork } from 'lucide-react';
 import { useSubSections } from '../../hooks/useSubSections';
+import { ImageUploader } from '../shared/ImageUploader';
+import { DiagramEditor } from '../shared/DiagramEditor';
 
 const questionSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title must be less than 255 characters'),
@@ -26,6 +28,15 @@ export function QuestionDialog({
   isLoading = false,
 }) {
   const { data: subSections } = useSubSections();
+  const [activeTab, setActiveTab] = useState('main');
+  const [imageData, setImageData] = useState(() => {
+    const key = question?.id ? `q-image-${question.id}` : null;
+    return key ? JSON.parse(localStorage.getItem(key) || 'null') : null;
+  });
+  const [diagramData, setDiagramData] = useState(() => {
+    const key = question?.id ? `q-diagram-${question.id}` : null;
+    return key ? JSON.parse(localStorage.getItem(key) || 'null') : null;
+  });
   const {
     register,
     handleSubmit,
@@ -69,9 +80,11 @@ export function QuestionDialog({
   }, [isOpen, question, preselectedSubSectionId, reset]);
 
   const handleFormSubmit = async (data) => {
-    console.log('[QUESTION] Save button clicked');
-    console.log('[QUESTION] Form Values:', data);
-    console.log('[QUESTION] Form Fields → title:', data.title, '| answer:', data.answer, '| codeSnippet:', data.codeSnippet, '| codeLanguage:', data.codeLanguage, '| explanation:', data.explanation, '| subSectionId:', data.subSectionId);
+    const questionId = question?.id;
+    if (questionId) {
+      if (imageData)   localStorage.setItem(`q-image-${questionId}`,   JSON.stringify(imageData));
+      if (diagramData) localStorage.setItem(`q-diagram-${questionId}`, JSON.stringify(diagramData));
+    }
     const payload = {
       title: data.title,
       answer: data.answer || null,
@@ -80,7 +93,6 @@ export function QuestionDialog({
       explanation: data.explanation || null,
       subSectionId: Number(data.subSectionId),
     };
-    console.log('[QUESTION] Payload Being Sent:', payload);
     await onSubmit(payload);
     reset();
   };
@@ -108,12 +120,30 @@ export function QuestionDialog({
             </button>
           </div>
 
+          {/* Tabs */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--paper-border)', padding: '0 24px' }}>
+            {[
+              { id: 'main',    label: 'Content' },
+              { id: 'image',   label: '🖼 Image',   Icon: Image },
+              { id: 'diagram', label: '🔷 Diagram', Icon: GitFork },
+            ].map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setActiveTab(t.id)}
+                style={{ padding: '10px 14px', fontSize: '13px', fontWeight: activeTab === t.id ? 600 : 400, color: activeTab === t.id ? 'var(--accent)' : 'var(--text-muted)', background: 'none', border: 'none', borderBottom: activeTab === t.id ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer', marginBottom: '-1px' }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
           {/* Form */}
           <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-4">
+            {/* ── Main tab ── */}
+            {activeTab === 'main' && (<>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                SubSection *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">SubSection *</label>
               <select
                 {...register('subSectionId', { valueAsNumber: true })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
@@ -206,6 +236,27 @@ export function QuestionDialog({
                 <p className="text-red-500 text-sm mt-1">{errors.explanation.message}</p>
               )}
             </div>
+            </>)}
+
+            {/* ── Image tab ── */}
+            {activeTab === 'image' && (
+              <div>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                  Upload an image and set its display size. Stored locally in your browser.
+                </p>
+                <ImageUploader value={imageData} onChange={setImageData} />
+              </div>
+            )}
+
+            {/* ── Diagram tab ── */}
+            {activeTab === 'diagram' && (
+              <div>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                  Build a flow diagram. Drag nodes, connect them with arrows. Stored locally.
+                </p>
+                <DiagramEditor value={diagramData} onChange={setDiagramData} />
+              </div>
+            )}
 
             {/* Footer */}
             <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">

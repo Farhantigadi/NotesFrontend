@@ -49,9 +49,9 @@ export function SectionItem({ section, index, total, isExpanded, onToggle, onAdd
               onClick={() => onAddSubSection?.(section.id)}
               title="Add subsection"
               className="group-hover:opacity-100"
-              style={{ padding: '4px', color: '#a8a29e', background: 'none', border: 'none', cursor: 'pointer', opacity: 0, flexShrink: 0, borderRadius: '4px' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#92400e'}
-              onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}
+              style={{ padding: '4px', color: '#1a1a1a', background: 'none', border: 'none', cursor: 'pointer', opacity: 0, flexShrink: 0, borderRadius: '4px' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#000000'}
+              onMouseLeave={e => e.currentTarget.style.color = '#1a1a1a'}
             >
               <Plus size={12} />
             </button>
