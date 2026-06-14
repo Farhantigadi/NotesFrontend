@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X } from 'lucide-react';
 import { useSubSections } from '../../hooks/useSubSections';
+import { useUploadQuestionImage, useDeleteQuestionImage } from '../../hooks/useQuestions';
 import { ImageUploader } from '../shared/ImageUploader';
 import { DiagramEditor } from '../shared/DiagramEditor';
 
@@ -28,10 +29,14 @@ export function QuestionDialog({
   isLoading = false,
 }) {
   const { data: subSections } = useSubSections();
+  const uploadImageMutation = useUploadQuestionImage();
+  const deleteImageMutation = useDeleteQuestionImage();
   const [activeTab, setActiveTab] = useState('main');
-  const [imageData, setImageData] = useState(() => {
-    const key = question?.id ? `q-image-${question.id}` : null;
-    return key ? JSON.parse(localStorage.getItem(key) || 'null') : null;
+  const [pendingImageFile, setPendingImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(question?.imageUrl || null);
+  const [imageSettings, setImageSettings] = useState({
+    width: question?.imageWidth ?? 100,
+    align: question?.imageAlign ?? 'center',
   });
   const [diagramData, setDiagramData] = useState(() => {
     const key = question?.id ? `q-diagram-${question.id}` : null;
@@ -66,6 +71,9 @@ export function QuestionDialog({
         displayOrder: question.displayOrder || undefined,
         subSectionId: question.subSectionId,
       });
+      setImagePreview(question.imageUrl || null);
+      setPendingImageFile(null);
+      setImageSettings({ width: question.imageWidth ?? 100, align: question.imageAlign ?? 'center' });
     } else if (isOpen) {
       reset({
         title: '',
@@ -76,15 +84,14 @@ export function QuestionDialog({
         displayOrder: undefined,
         subSectionId: preselectedSubSectionId || undefined,
       });
+      setImagePreview(null);
+      setPendingImageFile(null);
+      setImageSettings({ width: 100, align: 'center' });
     }
   }, [isOpen, question, preselectedSubSectionId, reset]);
 
   const handleFormSubmit = async (data) => {
     const questionId = question?.id;
-    if (questionId) {
-      if (imageData)   localStorage.setItem(`q-image-${questionId}`,   JSON.stringify(imageData));
-      if (diagramData) localStorage.setItem(`q-diagram-${questionId}`, JSON.stringify(diagramData));
-    }
     const payload = {
       title: data.title,
       answer: data.answer || null,
@@ -92,9 +99,35 @@ export function QuestionDialog({
       codeLanguage: data.codeLanguage || null,
       explanation: data.explanation || null,
       subSectionId: Number(data.subSectionId),
+      imageWidth: imageSettings.width,
+      imageAlign: imageSettings.align,
     };
-    await onSubmit(payload);
+    const saved = await onSubmit(payload);
+    const savedId = saved?.id || questionId;
+    if (savedId && pendingImageFile) {
+      await uploadImageMutation.mutateAsync({ id: savedId, file: pendingImageFile });
+    }
+    if (savedId && diagramData) {
+      localStorage.setItem(`q-diagram-${savedId}`, JSON.stringify(diagramData));
+    }
     reset();
+  };
+
+  const handleImageChange = (file) => {
+    setPendingImageFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setImagePreview(url);
+    } else {
+      setImagePreview(null);
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (question?.id) await deleteImageMutation.mutateAsync(question.id);
+    setImagePreview(null);
+    setPendingImageFile(null);
+    setImageSettings({ width: 100, align: 'center' });
   };
 
   if (!isOpen) return null;
@@ -192,8 +225,15 @@ export function QuestionDialog({
 
               {activeTab === 'image' && (
                 <div>
-                  <p style={{ fontSize: '13px', color: '#a8a29e', marginBottom: '16px' }}>Upload an image and set its display size. Stored locally in your browser.</p>
-                  <ImageUploader value={imageData} onChange={setImageData} />
+                  <p style={{ fontSize: '13px', color: '#a8a29e', marginBottom: '16px' }}>Upload an image to attach to this question. Saved to the server.</p>
+                  <ImageUploader
+                    value={imagePreview ? { src: imagePreview } : null}
+                    onFileChange={handleImageChange}
+                    onDelete={handleDeleteImage}
+                    isDeleting={deleteImageMutation.isPending}
+                    settings={imageSettings}
+                    onSettingsChange={setImageSettings}
+                  />
                 </div>
               )}
 

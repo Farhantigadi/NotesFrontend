@@ -72,7 +72,8 @@ export function SubSectionDetailPage() {
       const maxOrder = sortedQuestions.length > 0
         ? Math.max(...sortedQuestions.map(q => q.displayOrder ?? 0))
         : 0;
-      await createMutation.mutateAsync({ ...data, displayOrder: maxOrder + 1 });
+      const saved = await createMutation.mutateAsync({ ...data, displayOrder: maxOrder + 1 });
+      return saved;
     }
     setIsDialogOpen(false);
   };
@@ -258,14 +259,18 @@ function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, on
         </p>
       )}
 
-      {/* Image (localStorage) */}
-      {(() => {
-        const img = JSON.parse(localStorage.getItem(`q-image-${question.id}`) || 'null');
-        return img?.src ? (
-          <div style={{ marginTop: '20px' }}>
-            <img src={img.src} alt="attached" style={{ width: `${img.width}px`, height: `${img.height}px`, objectFit: 'contain', borderRadius: '8px', border: '1px solid var(--paper-border)' }} />
+      {/* Image from server */}
+      {question.imageUrl && (() => {
+        const w = question.imageWidth ?? 100;
+        const a = question.imageAlign ?? 'center';
+        const justifyMap = { left: 'flex-start', center: 'center', right: 'flex-end' };
+        return (
+          <div style={{ marginTop: '20px', display: 'flex', justifyContent: justifyMap[a] }}>
+            <img src={question.imageUrl} alt="attached"
+              style={{ width: `${w}%`, objectFit: 'contain', borderRadius: '8px', border: '1px solid var(--paper-border)', display: 'block' }}
+            />
           </div>
-        ) : null;
+        );
       })()}
 
       {/* Diagram (localStorage) */}

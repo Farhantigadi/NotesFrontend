@@ -27,6 +27,16 @@ export const questionsApi = {
   updateQuestion: async (id, data) => {
     return axiosInstance.put(`/api/questions/${id}`, data);
   },
+  uploadQuestionImage: async (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axiosInstance.post(`/api/questions/${id}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  deleteQuestionImage: async (id) => {
+    return axiosInstance.delete(`/api/questions/${id}/image`);
+  },
   reorderQuestions: async (updates) => {
     // updates = [{ id, title, subSectionId, displayOrder }, ...]
     return Promise.all(updates.map(({ id, title, subSectionId, displayOrder }) =>

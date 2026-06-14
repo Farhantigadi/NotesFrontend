@@ -62,6 +62,28 @@ export const useUpdateQuestion = () => {
   });
 };
 
+export const useUploadQuestionImage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }) => questionsApi.uploadQuestionImage(id, file),
+    onSuccess: (updatedQuestion) => {
+      queryClient.setQueryData([QUESTIONS_QUERY_KEY, updatedQuestion.id], updatedQuestion);
+      queryClient.invalidateQueries({ queryKey: [QUESTIONS_QUERY_KEY] });
+    },
+  });
+};
+
+export const useDeleteQuestionImage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => questionsApi.deleteQuestionImage(id),
+    onSuccess: (updatedQuestion) => {
+      queryClient.setQueryData([QUESTIONS_QUERY_KEY, updatedQuestion.id], updatedQuestion);
+      queryClient.invalidateQueries({ queryKey: [QUESTIONS_QUERY_KEY] });
+    },
+  });
+};
+
 export const useDeleteQuestion = () => {
   const queryClient = useQueryClient();
   return useMutation({

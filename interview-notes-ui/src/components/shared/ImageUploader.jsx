@@ -1,126 +1,124 @@
 import { useRef, useState } from 'react';
-import { Upload, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { Upload, X, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
-export function ImageUploader({ value, onChange }) {
+const PRESETS = [
+  { label: 'S', value: 25 },
+  { label: 'M', value: 50 },
+  { label: 'L', value: 75 },
+  { label: 'Full', value: 100 },
+];
+
+const ALIGNMENTS = [
+  { value: 'left',   Icon: AlignLeft },
+  { value: 'center', Icon: AlignCenter },
+  { value: 'right',  Icon: AlignRight },
+];
+
+export function ImageUploader({ value, onFileChange, onDelete, isDeleting, settings, onSettingsChange }) {
   const inputRef = useRef(null);
-  const [width, setWidth]   = useState(value?.width  ?? 100);
-  const [height, setHeight] = useState(value?.height ?? 'auto');
-  const [lockAspect, setLockAspect] = useState(true);
-  const naturalSize = useRef({ w: 0, h: 0 });
+  const [width, setWidth]     = useState(settings?.width ?? 100);
+  const [align, setAlign]     = useState(settings?.align ?? 'center');
 
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const src = ev.target.result;
-      // Get natural dimensions
-      const img = new Image();
-      img.onload = () => {
-        naturalSize.current = { w: img.naturalWidth, h: img.naturalHeight };
-        const w = Math.min(img.naturalWidth, 600);
-        const h = lockAspect ? Math.round(w * img.naturalHeight / img.naturalWidth) : img.naturalHeight;
-        setWidth(w); setHeight(h);
-        onChange?.({ src, width: w, height: h });
-      };
-      img.src = src;
-    };
-    reader.readAsDataURL(file);
+    onFileChange?.(file);
+    if (inputRef.current) inputRef.current.value = '';
   };
 
-  const handleWidth = (w) => {
-    const parsed = Math.max(40, Math.min(1200, Number(w)));
-    setWidth(parsed);
-    if (lockAspect && naturalSize.current.w) {
-      const h = Math.round(parsed * naturalSize.current.h / naturalSize.current.w);
-      setHeight(h);
-      onChange?.({ ...value, width: parsed, height: h });
-    } else {
-      onChange?.({ ...value, width: parsed, height });
-    }
+  const updateWidth = (w) => {
+    setWidth(w);
+    onSettingsChange?.({ width: w, align });
   };
 
-  const handleHeight = (h) => {
-    const parsed = Math.max(20, Math.min(1200, Number(h)));
-    setHeight(parsed);
-    onChange?.({ ...value, width, height: parsed });
+  const updateAlign = (a) => {
+    setAlign(a);
+    onSettingsChange?.({ width, align: a });
   };
 
-  const clear = () => { onChange?.(null); setWidth(100); setHeight('auto'); inputRef.current.value = ''; };
+  const justifyMap = { left: 'flex-start', center: 'center', right: 'flex-end' };
 
   return (
-    <div style={{ border: '1px solid var(--paper-border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)' }}>
-      {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderBottom: '1px solid var(--paper-border)', flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          onClick={() => inputRef.current.click()}
-          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '6px', border: '1px solid var(--paper-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px' }}
-        >
-          <Upload size={13} /> {value?.src ? 'Replace Image' : 'Upload Image'}
-        </button>
+    <div style={{ border: '1px solid #e0dbd2', borderRadius: '10px', overflow: 'hidden', background: '#faf9f7' }}>
 
+      {/* Toolbar row 1 — upload + delete */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderBottom: '1px solid #e0dbd2' }}>
+        <button type="button" onClick={() => inputRef.current.click()}
+          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #e0dbd2', background: '#fff', color: '#3c3836', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}
+          onMouseEnter={e => e.currentTarget.style.background = '#f5f0e8'}
+          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+        >
+          <Upload size={13} /> {value?.src ? 'Replace' : 'Upload Image'}
+        </button>
         <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
 
         {value?.src && (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>W</span>
-              <input
-                type="number" value={width} min={40} max={1200}
-                onChange={e => handleWidth(e.target.value)}
-                style={{ width: '64px', padding: '3px 6px', borderRadius: '5px', border: '1px solid var(--paper-border)', fontSize: '12px', background: 'var(--surface)', color: 'var(--text-primary)' }}
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>px</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setLockAspect(l => !l)}
-              title={lockAspect ? 'Aspect ratio locked' : 'Aspect ratio unlocked'}
-              style={{ padding: '3px 6px', borderRadius: '5px', border: '1px solid var(--paper-border)', background: lockAspect ? 'var(--accent)' : 'transparent', color: lockAspect ? '#fff' : 'var(--text-muted)', cursor: 'pointer', fontSize: '11px' }}
-            >
-              {lockAspect ? '🔒' : '🔓'}
-            </button>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>H</span>
-              <input
-                type="number" value={height} min={20} max={1200}
-                disabled={lockAspect}
-                onChange={e => handleHeight(e.target.value)}
-                style={{ width: '64px', padding: '3px 6px', borderRadius: '5px', border: '1px solid var(--paper-border)', fontSize: '12px', background: lockAspect ? 'var(--paper-subtle)' : 'var(--surface)', color: 'var(--text-primary)', opacity: lockAspect ? 0.6 : 1 }}
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>px</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: '4px', marginLeft: '4px' }}>
-              <button type="button" onClick={() => handleWidth(Math.round(width * 0.8))} title="Zoom out" style={{ padding: '3px 6px', borderRadius: '5px', border: '1px solid var(--paper-border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><ZoomOut size={13} /></button>
-              <button type="button" onClick={() => handleWidth(Math.round(width * 1.25))} title="Zoom in" style={{ padding: '3px 6px', borderRadius: '5px', border: '1px solid var(--paper-border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><ZoomIn size={13} /></button>
-            </div>
-
-            <button type="button" onClick={clear} title="Remove image" style={{ marginLeft: 'auto', padding: '3px 6px', borderRadius: '5px', border: '1px solid var(--paper-border)', background: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}>
-              <X size={13} />
-            </button>
-          </>
+          <button type="button" onClick={onDelete} disabled={isDeleting}
+            style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: 'transparent', color: '#ef4444', cursor: isDeleting ? 'not-allowed' : 'pointer', fontSize: '12px', fontWeight: 500, opacity: isDeleting ? 0.6 : 1 }}
+            onMouseEnter={e => { if (!isDeleting) e.currentTarget.style.background = '#fef2f2'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <X size={12} /> {isDeleting ? 'Deleting...' : 'Delete Image'}
+          </button>
         )}
       </div>
 
+      {/* Toolbar row 2 — size + alignment (only when image exists) */}
+      {value?.src && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '8px 12px', borderBottom: '1px solid #e0dbd2', background: '#fff', flexWrap: 'wrap' }}>
+
+          {/* Size presets */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#a8a29e', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Size</span>
+            <div style={{ display: 'flex', gap: '3px' }}>
+              {PRESETS.map(p => (
+                <button key={p.value} type="button" onClick={() => updateWidth(p.value)}
+                  style={{ padding: '3px 8px', borderRadius: '5px', border: `1px solid ${width === p.value ? '#92400e' : '#e0dbd2'}`, background: width === p.value ? '#92400e' : 'transparent', color: width === p.value ? '#fff' : '#6b6b6b', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Slider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '140px' }}>
+            <input type="range" min={10} max={100} value={width}
+              onChange={e => updateWidth(Number(e.target.value))}
+              style={{ flex: 1, accentColor: '#92400e', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#3c3836', minWidth: '36px' }}>{width}%</span>
+          </div>
+
+          {/* Alignment */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#a8a29e', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Align</span>
+            <div style={{ display: 'flex', gap: '3px' }}>
+              {ALIGNMENTS.map(({ value: a, Icon }) => (
+                <button key={a} type="button" onClick={() => updateAlign(a)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '5px', border: `1px solid ${align === a ? '#92400e' : '#e0dbd2'}`, background: align === a ? '#92400e' : 'transparent', color: align === a ? '#fff' : '#6b6b6b', cursor: 'pointer' }}
+                >
+                  <Icon size={13} />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Preview */}
-      <div style={{ padding: '16px', minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ padding: '20px', minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: value?.src ? justifyMap[align] : 'center' }}>
         {value?.src ? (
-          <img
-            src={value.src}
-            alt="uploaded"
-            style={{ width: `${width}px`, height: `${height}px`, objectFit: 'contain', borderRadius: '6px', display: 'block' }}
+          <img src={value.src} alt="uploaded"
+            style={{ width: `${width}%`, objectFit: 'contain', borderRadius: '6px', display: 'block' }}
           />
         ) : (
-          <div
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer' }}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#a8a29e', cursor: 'pointer' }}
             onClick={() => inputRef.current.click()}
           >
-            <Upload size={24} style={{ opacity: 0.4 }} />
-            <span style={{ fontSize: '12px' }}>Click to upload an image</span>
+            <Upload size={28} style={{ opacity: 0.35 }} />
+            <span style={{ fontSize: '13px' }}>Click to upload an image</span>
+            <span style={{ fontSize: '11px', color: '#c4b5a5' }}>PNG, JPG, GIF up to 10MB</span>
           </div>
         )}
       </div>

@@ -113,17 +113,21 @@ export function QuestionDetailPage() {
           </section>
         )}
 
-        {question.codeSnippet ? (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-accent mb-4">Code Example</h2>
-            <CodeBlock code={question.codeSnippet} language={question.codeLanguage || 'javascript'} />
-          </section>
-        ) : (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-accent mb-4">Code Example</h2>
-            <div className="content-area-bg rounded-lg p-6 border border-gray-200 text-gray-400 italic">No Code Example Available</div>
-          </section>
-        )}
+        {question.imageUrl && (() => {
+          const w = question.imageWidth ?? 100;
+          const a = question.imageAlign ?? 'center';
+          const justifyMap = { left: 'flex-start', center: 'center', right: 'flex-end' };
+          return (
+            <section className="mb-12">
+              <h2 className="text-2xl font-bold text-accent mb-4">Image</h2>
+              <div style={{ display: 'flex', justifyContent: justifyMap[a] }}>
+                <img src={question.imageUrl} alt="attached"
+                  style={{ width: `${w}%`, objectFit: 'contain', borderRadius: '10px', border: '1px solid #e0dbd2', display: 'block' }}
+                />
+              </div>
+            </section>
+          );
+        })()}
 
         {question.explanation ? (
           <section className="mb-12">
