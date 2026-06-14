@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronRight, Edit2, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { CodeBlock } from '../components/shared/CodeBlock';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { QuestionDialog } from '../components/dialogs/QuestionDialog';
 import { ConfirmDialog } from '../components/shared/ConfirmDialog';
@@ -9,6 +9,15 @@ import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { useSubSection } from '../hooks/useSubSections';
 import { useQuestionsBySubSection, useCreateQuestion, useUpdateQuestion, useDeleteQuestion, useReorderQuestions } from '../hooks/useQuestions';
 import { useEditMode } from '../contexts/EditModeContext';
+
+const PEN_COLORS = [
+  { id: 'yellow', bg: '#FFF176', label: 'Yellow' },
+  { id: 'green',  bg: '#CCFF90', label: 'Green'  },
+  { id: 'blue',   bg: '#80D8FF', label: 'Blue'   },
+  { id: 'pink',   bg: '#FF80AB', label: 'Pink'   },
+  { id: 'orange', bg: '#FFD180', label: 'Orange' },
+  { id: 'warm',   bg: 'rgb(245, 240, 232)', label: 'Warm' },
+];
 
 export function SubSectionDetailPage() {
   const { id } = useParams();
@@ -27,7 +36,6 @@ export function SubSectionDetailPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
 
-  // Sort questions by displayOrder (nulls last), stable
   const sortedQuestions = useMemo(() => {
     if (!questions) return [];
     return [...questions].sort((a, b) => {
@@ -46,14 +54,12 @@ export function SubSectionDetailPage() {
     const list = [...sortedQuestions];
     const swapIndex = index + direction;
     if (swapIndex < 0 || swapIndex >= list.length) return;
-
     const updates = list.map((q, i) => {
       let newOrder = i + 1;
       if (i === index) newOrder = swapIndex + 1;
       if (i === swapIndex) newOrder = index + 1;
       return { id: q.id, title: q.title, subSectionId: q.subSectionId, displayOrder: newOrder };
     });
-
     reorderMutation.mutate(updates);
   };
 
@@ -69,7 +75,6 @@ export function SubSectionDetailPage() {
       if (editingId) {
         await updateMutation.mutateAsync({ id: editingId, data });
       } else {
-        // Assign displayOrder as max existing + 1 so new question goes to end
         const maxOrder = sortedQuestions.length > 0
           ? Math.max(...sortedQuestions.map(q => q.displayOrder ?? 0))
           : 0;
@@ -81,70 +86,76 @@ export function SubSectionDetailPage() {
     }
   };
 
-  if (subSectionLoading) {
-    return <Layout><LoadingSpinner /></Layout>;
-  }
-
-  if (!subSection) {
-    return <Layout><div className="text-center py-12"><p className="text-gray-600">SubSection not found</p></div></Layout>;
-  }
+  if (subSectionLoading) return <Layout><LoadingSpinner /></Layout>;
+  if (!subSection) return <Layout><div className="text-center py-12"><p className="text-gray-600">SubSection not found</p></div></Layout>;
 
   const editingQuestion = editingId ? questions?.find((q) => q.id === editingId) : undefined;
 
   return (
     <Layout>
       <div className="space-y-8">
-        <div className="text-sm text-gray-600 flex items-center gap-2">
+        {/* Breadcrumb */}
+        <div className="text-sm text-gray-500 flex items-center gap-2">
           <button onClick={() => navigate('/sections')} className="hover:text-accent">Sections</button>
-          <ChevronRight size={16} />
-          <button onClick={() => navigate(`/sections/${subSection.mainSectionId}`)} className="hover:text-accent">
-            {subSection.mainSectionTitle}
-          </button>
-          <ChevronRight size={16} />
-          <span>{subSection.title}</span>
+          <ChevronRight size={14} />
+          <button onClick={() => navigate(`/sections/${subSection.mainSectionId}`)} className="hover:text-accent">{subSection.mainSectionTitle}</button>
+          <ChevronRight size={14} />
+          <span style={{ color: '#242424' }}>{subSection.title}</span>
         </div>
 
-        <div className="content-area-bg rounded-lg p-8 border border-gray-200">
-          <h1 className="text-4xl font-bold text-accent mb-4">{subSection.title}</h1>
-          {subSection.description && <p className="text-gray-700 text-lg leading-relaxed">{subSection.description}</p>}
-        </div>
-
+        {/* Section header — no border, clean */}
         <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Questions ({questions?.length || 0})</h2>
-            {isEditMode && (
-              <button onClick={handleAddQuestion} className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-opacity-90">
-                <Plus size={18} /> Add Question
-              </button>
-            )}
-          </div>
-
-          {questionsLoading ? (
-            <LoadingSpinner />
-          ) : sortedQuestions.length > 0 ? (
-            <div className="max-w-2xl">
-              {sortedQuestions.map((question, index) => (
-                <QuestionItem
-                  key={question.id}
-                  question={question}
-                  index={index}
-                  total={sortedQuestions.length}
-                  onNavigate={() => navigate(`/questions/${question.id}`)}
-                  onEdit={() => handleEditQuestion(question.id)}
-                  onDelete={() => handleDeleteQuestion(question.id)}
-                  onMoveUp={() => handleMove(index, -1)}
-                  onMoveDown={() => handleMove(index, 1)}
-                  isEditMode={isEditMode}
-                  isReordering={reorderMutation.isPending}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <p className="text-gray-600">No questions yet</p>
-            </div>
+          <h1 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '36px', fontWeight: 700, color: '#242424', lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: '8px' }}>
+            {subSection.title}
+          </h1>
+          {subSection.description && (
+            <p style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '18px', lineHeight: 1.8, color: '#6b6b6b' }}>
+              {subSection.description}
+            </p>
           )}
         </div>
+
+        {/* Questions header */}
+        <div className="flex items-center justify-between">
+          <p style={{ fontSize: '13px', fontWeight: 600, color: '#a8a29e', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            {questions?.length || 0} Questions
+          </p>
+          {isEditMode && (
+            <button
+              onClick={handleAddQuestion}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#92400e', color: '#fff', fontSize: '13px', fontWeight: 500, borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+            >
+              <Plus size={15} /> Add Question
+            </button>
+          )}
+        </div>
+
+        {/* Questions list */}
+        {questionsLoading ? (
+          <LoadingSpinner />
+        ) : sortedQuestions.length > 0 ? (
+          <div style={{ maxWidth: '680px' }}>
+            {sortedQuestions.map((question, index) => (
+              <QuestionItem
+                key={question.id}
+                question={question}
+                index={index}
+                total={sortedQuestions.length}
+                onNavigate={() => navigate(`/questions/${question.id}`)}
+                onEdit={() => handleEditQuestion(question.id)}
+                onDelete={() => handleDeleteQuestion(question.id)}
+                onMoveUp={() => handleMove(index, -1)}
+                onMoveDown={() => handleMove(index, 1)}
+                isEditMode={isEditMode}
+                isReordering={reorderMutation.isPending}
+              />
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '48px 0', color: '#a8a29e', fontSize: '15px' }}>
+            No questions yet
+          </div>
+        )}
       </div>
 
       <QuestionDialog
@@ -172,87 +183,151 @@ export function SubSectionDetailPage() {
 
 function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, onMoveUp, onMoveDown, isEditMode, isReordering }) {
   const [codeExpanded, setCodeExpanded] = useState(false);
+  const [activePen, setActivePen] = useState(null);
+  const storageKey = `highlights-${question.id}`;
+  const contentRef = useRef(null);
+
   const previewLines = question.codeSnippet?.split('\n').slice(0, 7).join('\n') || '';
   const totalLines = question.codeSnippet?.split('\n').length || 0;
   const hasMore = totalLines > 7;
 
+  // Load saved highlights from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved && contentRef.current) {
+      contentRef.current.innerHTML = saved;
+    }
+  }, [storageKey]);
+
+  const applyHighlight = (color) => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    const range = selection.getRangeAt(0);
+    if (!contentRef.current?.contains(range.commonAncestorContainer)) return;
+
+    const mark = document.createElement('mark');
+    mark.style.background = color;
+    mark.style.borderRadius = '2px';
+    mark.style.padding = '0 1px';
+    mark.dataset.highlight = 'true';
+    range.surroundContents(mark);
+    selection.removeAllRanges();
+
+    // Persist
+    localStorage.setItem(storageKey, contentRef.current.innerHTML);
+  };
+
+  const removeHighlights = () => {
+    if (!contentRef.current) return;
+    const marks = contentRef.current.querySelectorAll('mark[data-highlight]');
+    marks.forEach(mark => {
+      const parent = mark.parentNode;
+      while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+      parent.removeChild(mark);
+    });
+    localStorage.setItem(storageKey, contentRef.current.innerHTML);
+  };
+
   return (
-    <article className="border-b border-gray-200 py-10 first:pt-2">
-      {/* Question number + action buttons */}
-      <div className="flex items-center justify-between mb-3">
-        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600, color: '#6B6B6B', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-          Question {index + 1}
+    <article style={{ paddingTop: '40px', paddingBottom: '40px', borderBottom: index < total - 1 ? '1px solid #f0ede8' : 'none' }}>
+      {/* Question number + controls row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#c4b5a0', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          Q{index + 1}
         </span>
-        {isEditMode && (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={onMoveUp}
-              disabled={index === 0 || isReordering}
-              className="p-1 rounded transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
-              style={{ color: '#6B6B6B' }}
-              onMouseEnter={e => { if (index !== 0) e.currentTarget.style.color = '#242424'; }}
-              onMouseLeave={e => e.currentTarget.style.color = '#6B6B6B'}
-              title="Move up"
-            >
-              <ChevronUp size={16} />
-            </button>
-            <button
-              onClick={onMoveDown}
-              disabled={index === total - 1 || isReordering}
-              className="p-1 rounded transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
-              style={{ color: '#6B6B6B' }}
-              onMouseEnter={e => { if (index !== total - 1) e.currentTarget.style.color = '#242424'; }}
-              onMouseLeave={e => e.currentTarget.style.color = '#6B6B6B'}
-              title="Move down"
-            >
-              <ChevronDown size={16} />
-            </button>
-            <button onClick={onEdit} className="p-1 rounded transition-colors" style={{ color: '#6B6B6B' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#242424'}
-              onMouseLeave={e => e.currentTarget.style.color = '#6B6B6B'}>
-              <Edit2 size={15} />
-            </button>
-            <button onClick={onDelete} className="p-1 rounded transition-colors" style={{ color: '#6B6B6B' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-              onMouseLeave={e => e.currentTarget.style.color = '#6B6B6B'}>
-              <Trash2 size={15} />
-            </button>
-          </div>
-        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {/* Highlighter pens — always visible, but only functional in edit mode */}
+          {isEditMode && (
+            <>
+              {PEN_COLORS.map(pen => (
+                <button
+                  key={pen.id}
+                  onClick={() => {
+                    setActivePen(activePen === pen.id ? null : pen.id);
+                    if (activePen !== pen.id) applyHighlight(pen.bg);
+                  }}
+                  title={`Highlight ${pen.label}`}
+                  style={{
+                    width: '18px', height: '18px', borderRadius: '50%',
+                    background: pen.bg,
+                    border: activePen === pen.id ? '2px solid #242424' : '2px solid transparent',
+                    cursor: 'pointer', flexShrink: 0, transition: 'transform 0.1s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                />
+              ))}
+              <button
+                onClick={removeHighlights}
+                title="Remove all highlights"
+                style={{ fontSize: '11px', color: '#a8a29e', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px', marginLeft: '2px' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}
+              >
+                ✕
+              </button>
+              <div style={{ width: '1px', height: '14px', background: '#e8e5e0', margin: '0 4px' }} />
+              <button onClick={onMoveUp} disabled={index === 0 || isReordering}
+                style={{ padding: '3px', color: '#a8a29e', background: 'none', border: 'none', cursor: index === 0 ? 'not-allowed' : 'pointer', opacity: index === 0 ? 0.3 : 1 }}
+                onMouseEnter={e => { if (index !== 0) e.currentTarget.style.color = '#242424'; }}
+                onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+                <ChevronUp size={15} />
+              </button>
+              <button onClick={onMoveDown} disabled={index === total - 1 || isReordering}
+                style={{ padding: '3px', color: '#a8a29e', background: 'none', border: 'none', cursor: index === total - 1 ? 'not-allowed' : 'pointer', opacity: index === total - 1 ? 0.3 : 1 }}
+                onMouseEnter={e => { if (index !== total - 1) e.currentTarget.style.color = '#242424'; }}
+                onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+                <ChevronDown size={15} />
+              </button>
+              <button onClick={onEdit}
+                style={{ padding: '3px', color: '#a8a29e', background: 'none', border: 'none', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#242424'}
+                onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+                <Edit2 size={14} />
+              </button>
+              <button onClick={onDelete}
+                style={{ padding: '3px', color: '#a8a29e', background: 'none', border: 'none', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+                <Trash2 size={14} />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Title */}
-      <button onClick={onNavigate} className="w-full text-left group mb-5">
-        <h2
-          style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '26px', fontWeight: 700, color: '#242424', lineHeight: 1.3, letterSpacing: '-0.016em' }}
-          className="group-hover:opacity-75 transition-opacity"
-        >
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '24px', fontWeight: 700, color: '#242424', lineHeight: 1.35, letterSpacing: '-0.014em' }}>
           {question.title}
         </h2>
-      </button>
+      </div>
 
-      {/* Answer */}
-      {question.answer && (
-        <p
-          style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '18px', lineHeight: 1.9, color: '#242424', letterSpacing: '-0.003em' }}
-          className="mb-6 whitespace-pre-wrap"
-        >
-          {question.answer}
-        </p>
-      )}
+      {/* Highlightable content area */}
+      <div
+        ref={contentRef}
+        style={{ cursor: activePen ? 'crosshair' : 'text' }}
+        onMouseUp={() => { if (activePen) { const pen = PEN_COLORS.find(p => p.id === activePen); if (pen) applyHighlight(pen.bg); } }}
+      >
+        {question.answer && (
+          <p style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '18px', lineHeight: 1.9, color: '#242424', letterSpacing: '-0.003em', marginBottom: '20px', whiteSpace: 'pre-wrap' }}>
+            {question.answer}
+          </p>
+        )}
+      </div>
 
       {/* Code block */}
       {question.codeSnippet && (
-        <div className="mb-6 rounded-xl overflow-hidden" style={{ background: '#282c34' }}>
-          <div className="flex items-center justify-between px-4 py-2.5" style={{ background: '#21252b', borderBottom: '1px solid #3e4451' }}>
-            <span className="text-xs font-medium tracking-widest uppercase" style={{ color: '#636d83', fontFamily: 'monospace' }}>
+        <div style={{ marginBottom: '20px', borderRadius: '10px', overflow: 'hidden', background: '#282c34' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: '#21252b', borderBottom: '1px solid #3e4451' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#636d83', fontFamily: 'monospace' }}>
               {question.codeLanguage || 'code'}
             </span>
             {hasMore && (
               <button
                 onClick={() => setCodeExpanded(v => !v)}
-                className="flex items-center gap-1 text-xs transition-colors"
-                style={{ color: '#636d83' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#636d83', background: 'none', border: 'none', cursor: 'pointer' }}
                 onMouseEnter={e => e.currentTarget.style.color = '#abb2bf'}
                 onMouseLeave={e => e.currentTarget.style.color = '#636d83'}
               >
@@ -264,14 +339,13 @@ function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, on
             <CodeBlock code={question.codeSnippet} language={question.codeLanguage || 'java'} />
           ) : (
             <div>
-              <pre style={{ fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace", fontSize: '13.5px', lineHeight: 1.75, padding: '1.25rem', margin: 0, overflowX: 'auto', color: '#abb2bf', background: '#282c34', whiteSpace: 'pre' }}>
+              <pre style={{ fontFamily: "'JetBrains Mono','Fira Code',Consolas,monospace", fontSize: '13.5px', lineHeight: 1.75, padding: '20px', margin: 0, overflowX: 'auto', color: '#abb2bf', background: '#282c34', whiteSpace: 'pre' }}>
                 {previewLines}
               </pre>
               {hasMore && (
                 <button
                   onClick={() => setCodeExpanded(true)}
-                  className="w-full py-2 text-xs transition-colors"
-                  style={{ color: '#636d83', background: '#21252b', borderTop: '1px solid #3e4451' }}
+                  style={{ width: '100%', padding: '8px', fontSize: '12px', color: '#636d83', background: '#21252b', border: 'none', borderTop: '1px solid #3e4451', cursor: 'pointer' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#abb2bf'}
                   onMouseLeave={e => e.currentTarget.style.color = '#636d83'}
                 >
@@ -285,10 +359,7 @@ function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, on
 
       {/* Explanation */}
       {question.explanation && (
-        <p
-          style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '18px', lineHeight: 1.9, color: '#6B6B6B', letterSpacing: '-0.003em' }}
-          className="whitespace-pre-wrap"
-        >
+        <p style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '18px', lineHeight: 1.9, color: '#6b6b6b', letterSpacing: '-0.003em', whiteSpace: 'pre-wrap' }}>
           {question.explanation}
         </p>
       )}
