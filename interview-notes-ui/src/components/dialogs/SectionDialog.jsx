@@ -41,6 +41,8 @@ export function SectionDialog({
   }, [isOpen, section, reset]);
 
   const handleFormSubmit = async (data) => {
+    console.log('[SECTION] Save button clicked');
+    console.log('[SECTION] Form Data:', data);
     await onSubmit(data);
     reset();
   };

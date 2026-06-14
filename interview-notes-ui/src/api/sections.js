@@ -8,7 +8,10 @@ export const sectionsApi = {
     return axiosInstance.get(`/api/sections/${id}`);
   },
   createSection: async (data) => {
-    return axiosInstance.post('/api/sections', data);
+    console.log('[SECTION] Calling POST /api/sections');
+    console.log('[SECTION] Payload:', data);
+    const response = axiosInstance.post('/api/sections', data);
+    return response;
   },
   updateSection: async (id, data) => {
     return axiosInstance.put(`/api/sections/${id}`, data);

@@ -14,12 +14,13 @@ export function SectionsPage() {
   const { isEditMode } = useEditMode();
   const { data: sections, isLoading } = useSections();
   const createMutation = useCreateSection();
-  const updateMutation = useUpdateSection(0);
+  const updateMutation = useUpdateSection();
   const deleteMutation = useDeleteSection();
 
   const [editingId, setEditingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
+  const [debugInfo, setDebugInfo] = useState({ formData: null, apiResponse: null, apiError: null });
 
   const handleAddSection = () => { setEditingId(null); setIsDialogOpen(true); };
   const handleEditSection = (id) => { setEditingId(id); setIsDialogOpen(true); };
@@ -33,12 +34,23 @@ export function SectionsPage() {
   };
 
   const handleFormSubmit = async (data) => {
-    if (editingId) {
-      await updateMutation.mutateAsync(data);
-    } else {
-      await createMutation.mutateAsync(data);
+    console.log('[SECTION] Form Data:', data);
+    setDebugInfo(prev => ({ ...prev, formData: data, apiResponse: null, apiError: null }));
+    try {
+      if (editingId) {
+        console.log('[SECTION] Starting update mutation for id:', editingId);
+        const response = await updateMutation.mutateAsync({ id: editingId, data });
+        setDebugInfo(prev => ({ ...prev, apiResponse: response }));
+      } else {
+        console.log('[SECTION] Starting create mutation');
+        const response = await createMutation.mutateAsync(data);
+        setDebugInfo(prev => ({ ...prev, apiResponse: response }));
+      }
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error('[SECTION] API Error:', err);
+      setDebugInfo(prev => ({ ...prev, apiError: err.message }));
     }
-    setIsDialogOpen(false);
   };
 
   if (isLoading) {
@@ -98,6 +110,41 @@ export function SectionsPage() {
         onCancel={() => setDeleteConfirm({ isOpen: false, id: null })}
         isLoading={deleteMutation.isPending}
       />
+
+      {/* DEBUG PANEL */}
+      {(debugInfo.formData || debugInfo.apiResponse || debugInfo.apiError) && (
+        <div style={{ position: 'fixed', bottom: 16, right: 16, zIndex: 9999, background: '#1e1e1e', color: '#d4d4d4', padding: '12px 16px', borderRadius: 8, fontSize: 12, maxWidth: 380, fontFamily: 'monospace', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+          <div style={{ fontWeight: 700, marginBottom: 6, color: '#ffd700' }}>🐛 Section Debug Panel</div>
+          {debugInfo.formData && (
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: '#9cdcfe' }}>Form Data:</span>{' '}
+              <span>{JSON.stringify(debugInfo.formData)}</span>
+            </div>
+          )}
+          <div style={{ marginBottom: 6 }}>
+            <span style={{ color: '#9cdcfe' }}>Mutation Status:</span>{' '}
+            <span style={{ color: createMutation.isPending ? '#ffd700' : createMutation.isError ? '#f48771' : createMutation.isSuccess ? '#89d185' : '#888' }}>
+              {createMutation.isPending ? 'pending' : createMutation.isError ? 'error' : createMutation.isSuccess ? 'success' : 'idle'}
+            </span>
+          </div>
+          <div style={{ marginBottom: 6 }}>
+            <span style={{ color: '#9cdcfe' }}>Loading:</span>{' '}
+            <span>{String(createMutation.isPending)}</span>
+          </div>
+          {debugInfo.apiError && (
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: '#f48771' }}>Error:</span>{' '}
+              <span style={{ color: '#f48771' }}>{debugInfo.apiError}</span>
+            </div>
+          )}
+          {debugInfo.apiResponse && (
+            <div>
+              <span style={{ color: '#89d185' }}>Response:</span>{' '}
+              <span>{JSON.stringify(debugInfo.apiResponse)}</span>
+            </div>
+          )}
+        </div>
+      )}
     </Layout>
   );
 }

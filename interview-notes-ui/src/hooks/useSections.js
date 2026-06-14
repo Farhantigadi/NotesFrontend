@@ -21,18 +21,27 @@ export const useSection = (id) => {
 export const useCreateSection = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data) => sectionsApi.createSection(data),
-    onSuccess: () => {
+    mutationFn: (data) => {
+      console.log('[SECTION] Starting create mutation');
+      return sectionsApi.createSection(data);
+    },
+    onSuccess: (response) => {
+      console.log('[SECTION] API Success:', response);
+      console.log('[SECTION] Invalidating sections query');
       queryClient.invalidateQueries({ queryKey: [SECTIONS_QUERY_KEY] });
+      console.log('[SECTION] Refetching sections');
+    },
+    onError: (error) => {
+      console.error('[SECTION] API Error:', error);
     },
   });
 };
 
-export const useUpdateSection = (id) => {
+export const useUpdateSection = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data) => sectionsApi.updateSection(id, data),
-    onSuccess: (updatedSection) => {
+    mutationFn: ({ id, data }) => sectionsApi.updateSection(id, data),
+    onSuccess: (updatedSection, { id }) => {
       queryClient.setQueryData([SECTIONS_QUERY_KEY, id], updatedSection);
       queryClient.invalidateQueries({ queryKey: [SECTIONS_QUERY_KEY] });
     },
