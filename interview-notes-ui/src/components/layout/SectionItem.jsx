@@ -1,10 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEditMode } from '../../contexts/EditModeContext';
 import { useSubSectionsBySection } from '../../hooks/useSubSections';
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, Plus } from 'lucide-react';
 import { SubSectionItem } from './SubSectionItem';
 
-export function SectionItem({ section, isExpanded, onToggle, onAddSubSection, isActive }) {
+export function SectionItem({ section, index, total, isExpanded, onToggle, onAddSubSection, onMoveUp, onMoveDown, isReordering, isActive }) {
   const navigate = useNavigate();
   const { isEditMode } = useEditMode();
   const { data: subSections } = useSubSectionsBySection(section.id);
@@ -12,9 +12,9 @@ export function SectionItem({ section, isExpanded, onToggle, onAddSubSection, is
   return (
     <div style={{ marginBottom: '2px' }}>
       <div
-        style={{ display: 'flex', alignItems: 'center', borderRadius: '7px', background: isActive ? '#fef3c7' : 'transparent', padding: '1px 4px 1px 0' }}
+        style={{ display: 'flex', alignItems: 'center', borderRadius: '7px', background: isActive ? '#d9cfc3' : 'transparent', padding: '1px 4px 1px 0' }}
         className="group"
-        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f5f0e8'; }}
+        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#cfc4b8'; }}
         onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
       >
         <button
@@ -32,16 +32,30 @@ export function SectionItem({ section, isExpanded, onToggle, onAddSubSection, is
         </button>
 
         {isEditMode && (
-          <button
-            onClick={() => onAddSubSection?.(section.id)}
-            title="Add subsection"
-            className="group-hover:opacity-100"
-            style={{ padding: '4px', color: '#a8a29e', background: 'none', border: 'none', cursor: 'pointer', opacity: 0, flexShrink: 0, borderRadius: '4px' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#92400e'}
-            onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}
-          >
-            <Plus size={12} />
-          </button>
+          <div style={{ display: 'flex', gap: '1px', marginLeft: '2px' }} onClick={e => e.stopPropagation()}>
+            <button onClick={onMoveUp} disabled={index === 0 || isReordering}
+              style={{ padding: '3px', color: '#a8a29e', background: 'none', border: 'none', cursor: index === 0 ? 'not-allowed' : 'pointer', opacity: index === 0 ? 0.3 : 1, borderRadius: '4px', display: 'flex' }}
+              onMouseEnter={e => { if (index !== 0) e.currentTarget.style.color = '#92400e'; }}
+              onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+              <ChevronUp size={11} />
+            </button>
+            <button onClick={onMoveDown} disabled={index === total - 1 || isReordering}
+              style={{ padding: '3px', color: '#a8a29e', background: 'none', border: 'none', cursor: index === total - 1 ? 'not-allowed' : 'pointer', opacity: index === total - 1 ? 0.3 : 1, borderRadius: '4px', display: 'flex' }}
+              onMouseEnter={e => { if (index !== total - 1) e.currentTarget.style.color = '#92400e'; }}
+              onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+              <ChevronDown size={11} />
+            </button>
+            <button
+              onClick={() => onAddSubSection?.(section.id)}
+              title="Add subsection"
+              className="group-hover:opacity-100"
+              style={{ padding: '4px', color: '#a8a29e', background: 'none', border: 'none', cursor: 'pointer', opacity: 0, flexShrink: 0, borderRadius: '4px' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#92400e'}
+              onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}
+            >
+              <Plus size={12} />
+            </button>
+          </div>
         )}
       </div>
 

@@ -25,7 +25,7 @@ export function SubSectionDetailPage() {
   const { isEditMode } = useEditMode();
   const subSectionId = Number(id);
 
-  const { data: subSection, isLoading: subSectionLoading } = useSubSection(subSectionId);
+  const { data: subSection, isLoading: subSectionLoading, isError } = useSubSection(subSectionId);
   const { data: questions, isLoading: questionsLoading } = useQuestionsBySubSection(subSectionId);
   const createMutation = useCreateQuestion();
   const updateMutation = useUpdateQuestion();
@@ -87,7 +87,7 @@ export function SubSectionDetailPage() {
   };
 
   if (subSectionLoading) return <Layout><LoadingSpinner /></Layout>;
-  if (!subSection) return <Layout><div className="text-center py-12"><p className="text-gray-600">SubSection not found</p></div></Layout>;
+  if (isError || !subSection) return <Layout><div style={{ textAlign: 'center', padding: '48px 0' }}><p style={{ color: '#a8a29e', fontSize: '15px' }}>Topic not found</p></div></Layout>;
 
   const editingQuestion = editingId ? questions?.find((q) => q.id === editingId) : undefined;
 
@@ -152,8 +152,16 @@ export function SubSectionDetailPage() {
             ))}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#a8a29e', fontSize: '15px' }}>
-            No questions yet
+          <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <p style={{ color: '#a8a29e', fontSize: '15px', marginBottom: '16px' }}>No questions yet</p>
+            {isEditMode && (
+              <button
+                onClick={handleAddQuestion}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#92400e', color: '#fff', fontSize: '13px', fontWeight: 500, borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+              >
+                <Plus size={15} /> Add First Question
+              </button>
+            )}
           </div>
         )}
       </div>

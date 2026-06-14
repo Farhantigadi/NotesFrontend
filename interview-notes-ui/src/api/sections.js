@@ -16,7 +16,9 @@ export const sectionsApi = {
   updateSection: async (id, data) => {
     return axiosInstance.put(`/api/sections/${id}`, data);
   },
-  deleteSection: async (id) => {
-    return axiosInstance.delete(`/api/sections/${id}`);
+  reorderSections: async (updates) => {
+    return Promise.all(updates.map(({ id, title, displayOrder }) =>
+      axiosInstance.put(`/api/sections/${id}`, { title, displayOrder })
+    ));
   },
 };

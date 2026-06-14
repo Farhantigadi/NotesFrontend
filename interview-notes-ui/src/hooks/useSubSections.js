@@ -47,6 +47,16 @@ export const useUpdateSubSection = (id) => {
   });
 };
 
+export const useReorderSubSections = (sectionId) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (updates) => subSectionsApi.reorderSubSections(updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SUBSECTIONS_QUERY_KEY, 'section', sectionId] });
+    },
+  });
+};
+
 export const useDeleteSubSection = () => {
   const queryClient = useQueryClient();
   return useMutation({

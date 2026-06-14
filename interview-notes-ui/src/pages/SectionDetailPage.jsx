@@ -1,12 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronRight, Edit2, Trash2, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { ChevronRight, Edit2, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { SubSectionDialog } from '../components/dialogs/SubSectionDialog';
 import { ConfirmDialog } from '../components/shared/ConfirmDialog';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { useSection } from '../hooks/useSections';
-import { useSubSectionsBySection, useCreateSubSection, useUpdateSubSection, useDeleteSubSection } from '../hooks/useSubSections';
+import { useSubSectionsBySection, useCreateSubSection, useUpdateSubSection, useDeleteSubSection, useReorderSubSections } from '../hooks/useSubSections';
 import { useEditMode } from '../contexts/EditModeContext';
 
 export function SectionDetailPage() {
@@ -20,6 +20,30 @@ export function SectionDetailPage() {
   const createMutation = useCreateSubSection();
   const updateMutation = useUpdateSubSection(0);
   const deleteMutation = useDeleteSubSection();
+  const reorderMutation = useReorderSubSections(sectionId);
+
+  const sortedSubSections = useMemo(() => {
+    if (!subSections) return [];
+    return [...subSections].sort((a, b) => {
+      if (a.displayOrder == null && b.displayOrder == null) return 0;
+      if (a.displayOrder == null) return 1;
+      if (b.displayOrder == null) return -1;
+      return a.displayOrder - b.displayOrder;
+    });
+  }, [subSections]);
+
+  const handleMove = (index, direction) => {
+    const list = [...sortedSubSections];
+    const swapIndex = index + direction;
+    if (swapIndex < 0 || swapIndex >= list.length) return;
+    const updates = list.map((s, i) => {
+      let newOrder = i + 1;
+      if (i === index) newOrder = swapIndex + 1;
+      if (i === swapIndex) newOrder = index + 1;
+      return { id: s.id, title: s.title, mainSectionId: s.mainSectionId, displayOrder: newOrder };
+    });
+    reorderMutation.mutate(updates);
+  };
 
   const [editingId, setEditingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -64,14 +88,22 @@ export function SectionDetailPage() {
           <span>{section.title}</span>
         </div>
 
-        <div className="content-area-bg rounded-lg p-8 border border-gray-200">
-          <h1 className="text-4xl font-bold text-accent mb-4">{section.title}</h1>
-          {section.description && <p className="text-gray-700 text-lg leading-relaxed">{section.description}</p>}
+        <div>
+          <h1 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '36px', fontWeight: 700, color: '#242424', lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: '8px' }}>
+            {section.title}
+          </h1>
+          {section.description && (
+            <p style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '18px', lineHeight: 1.8, color: '#6b6b6b' }}>
+              {section.description}
+            </p>
+          )}
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Topics</h2>
+            <p style={{ fontSize: '13px', fontWeight: 600, color: '#a8a29e', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              {subSections?.length || 0} Topics
+            </p>
             {isEditMode && (
               <button onClick={handleAddSubSection} className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-opacity-90">
                 <Plus size={18} /> Add Topic
@@ -82,15 +114,20 @@ export function SectionDetailPage() {
           {subSectionsLoading ? (
             <LoadingSpinner />
           ) : subSections && subSections.length > 0 ? (
-            <div className="space-y-3">
-              {subSections.map((subSection) => (
+            <div style={{ maxWidth: '680px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {sortedSubSections.map((subSection, index) => (
                 <SubSectionItem
                   key={subSection.id}
                   subSection={subSection}
+                  index={index}
+                  total={sortedSubSections.length}
                   onNavigate={() => navigate(`/subsections/${subSection.id}`)}
                   onEdit={() => handleEditSubSection(subSection.id)}
                   onDelete={() => handleDeleteSubSection(subSection.id)}
+                  onMoveUp={() => handleMove(index, -1)}
+                  onMoveDown={() => handleMove(index, 1)}
                   isEditMode={isEditMode}
+                  isReordering={reorderMutation.isPending}
                 />
               ))}
             </div>
@@ -125,21 +162,48 @@ export function SectionDetailPage() {
   );
 }
 
-function SubSectionItem({ subSection, onNavigate, onEdit, onDelete, isEditMode }) {
+function SubSectionItem({ subSection, index, total, onNavigate, onEdit, onDelete, onMoveUp, onMoveDown, isEditMode, isReordering }) {
   return (
-    <button onClick={onNavigate} className="w-full text-left bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all group">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-accent group-hover:text-opacity-80 transition-colors">{subSection.title}</h3>
-          {subSection.description && <p className="text-gray-600 text-sm mt-1 line-clamp-2">{subSection.description}</p>}
-        </div>
-        {isEditMode && (
-          <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
-            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Edit"><Edit2 size={18} /></button>
-            <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete"><Trash2 size={18} /></button>
-          </div>
+    <div
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', cursor: 'pointer', borderRadius: '8px', background: '#faf9f7', transition: 'background 0.15s' }}
+      onClick={onNavigate}
+      onMouseEnter={e => e.currentTarget.style.background = '#f0ede8'}
+      onMouseLeave={e => e.currentTarget.style.background = '#faf9f7'}
+    >
+      <div style={{ flex: 1 }}>
+        <h3 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '18px', fontWeight: 600, color: '#242424', marginBottom: subSection.description ? '4px' : 0 }}>
+          {subSection.title}
+        </h3>
+        {subSection.description && (
+          <p style={{ fontSize: '14px', color: '#6b6b6b', lineHeight: 1.5 }}>{subSection.description}</p>
         )}
       </div>
-    </button>
+      {isEditMode && (
+        <div style={{ display: 'flex', gap: '4px', marginLeft: '16px' }} onClick={e => e.stopPropagation()}>
+          <button onClick={onMoveUp} disabled={index === 0 || isReordering}
+            style={{ padding: '4px', color: '#a8a29e', background: 'none', border: 'none', cursor: index === 0 ? 'not-allowed' : 'pointer', opacity: index === 0 ? 0.3 : 1 }}
+            onMouseEnter={e => { if (index !== 0) e.currentTarget.style.color = '#242424'; }}
+            onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+            <ChevronUp size={15} />
+          </button>
+          <button onClick={onMoveDown} disabled={index === total - 1 || isReordering}
+            style={{ padding: '4px', color: '#a8a29e', background: 'none', border: 'none', cursor: index === total - 1 ? 'not-allowed' : 'pointer', opacity: index === total - 1 ? 0.3 : 1 }}
+            onMouseEnter={e => { if (index !== total - 1) e.currentTarget.style.color = '#242424'; }}
+            onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+            <ChevronDown size={15} />
+          </button>
+          <button onClick={onEdit} style={{ padding: '6px', color: '#a8a29e', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '6px' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#242424'}
+            onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+            <Edit2 size={15} />
+          </button>
+          <button onClick={onDelete} style={{ padding: '6px', color: '#a8a29e', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '6px' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+            onMouseLeave={e => e.currentTarget.style.color = '#a8a29e'}>
+            <Trash2 size={15} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

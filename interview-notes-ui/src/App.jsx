@@ -10,7 +10,7 @@ function App() {
     <Router>
       <EditModeProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/sections" replace />} />
+          <Route path="/" element={<Navigate to="/subsections/1" replace />} />
           <Route path="/sections" element={<SectionsPage />} />
           <Route path="/sections/:id" element={<SectionDetailPage />} />
           <Route path="/subsections/:id" element={<SubSectionDetailPage />} />
