@@ -41,6 +41,16 @@ export const useCreateQuestion = () => {
   });
 };
 
+export const useReorderQuestions = (subSectionId) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (updates) => questionsApi.reorderQuestions(updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUESTIONS_QUERY_KEY, 'subsection', subSectionId] });
+    },
+  });
+};
+
 export const useUpdateQuestion = () => {
   const queryClient = useQueryClient();
   return useMutation({

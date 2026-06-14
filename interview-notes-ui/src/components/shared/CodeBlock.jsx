@@ -1,7 +1,7 @@
 import { Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export function CodeBlock({ code, language = 'javascript' }) {
   const [copied, setCopied] = useState(false);
@@ -13,32 +13,32 @@ export function CodeBlock({ code, language = 'javascript' }) {
   };
 
   return (
-    <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-      <div className="flex items-center justify-between p-3 bg-gray-100 border-b border-gray-200">
-        <span className="text-xs font-medium text-gray-600 uppercase tracking-wider">
+    <div className="rounded-xl overflow-hidden" style={{ background: '#282c34' }}>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ background: '#21252b', borderBottom: '1px solid #3e4451' }}>
+        <span className="text-xs font-medium tracking-widest uppercase" style={{ color: '#636d83', fontFamily: 'monospace' }}>
           {language}
         </span>
         <button
           onClick={handleCopy}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          className="flex items-center gap-1.5 text-xs transition-colors"
+          style={{ color: copied ? '#98c379' : '#636d83' }}
           title="Copy code"
         >
-          {copied ? (
-            <Check size={16} className="text-green-600" />
-          ) : (
-            <Copy size={16} className="text-gray-600" />
-          )}
+          {copied ? <><Check size={14} />Copied</> : <><Copy size={14} />Copy</>}
         </button>
       </div>
       <SyntaxHighlighter
         language={language}
-        style={oneLight}
+        style={oneDark}
         customStyle={{
           margin: 0,
-          padding: '1rem',
+          padding: '1.25rem',
           fontSize: '14px',
-          lineHeight: '1.6',
+          lineHeight: '1.75',
+          background: '#282c34',
         }}
+        showLineNumbers
+        lineNumberStyle={{ color: '#4b5263', minWidth: '2.5em', userSelect: 'none' }}
       >
         {code}
       </SyntaxHighlighter>
