@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronRight, Edit2, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import { CodeBlock } from '../components/shared/CodeBlock';
 import { useState } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { QuestionDialog } from '../components/dialogs/QuestionDialog';
@@ -18,7 +19,7 @@ export function SubSectionDetailPage() {
   const { data: subSection, isLoading: subSectionLoading } = useSubSection(subSectionId);
   const { data: questions, isLoading: questionsLoading } = useQuestionsBySubSection(subSectionId);
   const createMutation = useCreateQuestion();
-  const updateMutation = useUpdateQuestion(0);
+  const updateMutation = useUpdateQuestion();
   const deleteMutation = useDeleteQuestion();
 
   const [editingId, setEditingId] = useState(null);
@@ -54,12 +55,16 @@ export function SubSectionDetailPage() {
   };
 
   const handleFormSubmit = async (data) => {
-    if (editingId) {
-      await updateMutation.mutateAsync(data);
-    } else {
-      await createMutation.mutateAsync(data);
+    try {
+      if (editingId) {
+        await updateMutation.mutateAsync({ id: editingId, data });
+      } else {
+        await createMutation.mutateAsync(data);
+      }
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error('[QUESTION] Submit Error:', err);
     }
-    setIsDialogOpen(false);
   };
 
   if (subSectionLoading) {
@@ -158,25 +163,43 @@ export function SubSectionDetailPage() {
 
 function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, onMoveUp, onMoveDown, isEditMode }) {
   return (
-    <button onClick={onNavigate} className="w-full text-left bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all group">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-accent group-hover:text-opacity-80 transition-colors mb-2">{question.title}</h3>
-          <div className="flex items-center gap-2">
-            {question.codeLanguage && <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">{question.codeLanguage}</span>}
-            {question.answer && <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">Has Answer</span>}
-            {question.codeSnippet && <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">Has Code</span>}
-          </div>
-        </div>
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <button onClick={onNavigate} className="flex-1 text-left">
+          <h3 className="text-xl font-bold text-accent hover:opacity-80 transition-opacity">{question.title}</h3>
+        </button>
         {isEditMode && (
-          <div className="flex gap-1 ml-4" onClick={(e) => e.stopPropagation()}>
-            {index > 0 && <button onClick={(e) => { e.stopPropagation(); onMoveUp(); }} className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Move Up"><ChevronUp size={18} /></button>}
-            {index < total - 1 && <button onClick={(e) => { e.stopPropagation(); onMoveDown(); }} className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Move Down"><ChevronDown size={18} /></button>}
-            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Edit"><Edit2 size={18} /></button>
-            <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete"><Trash2 size={18} /></button>
+          <div className="flex gap-1 ml-4">
+            {index > 0 && <button onClick={onMoveUp} className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Move Up"><ChevronUp size={18} /></button>}
+            {index < total - 1 && <button onClick={onMoveDown} className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Move Down"><ChevronDown size={18} /></button>}
+            <button onClick={onEdit} className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Edit"><Edit2 size={18} /></button>
+            <button onClick={onDelete} className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete"><Trash2 size={18} /></button>
           </div>
         )}
       </div>
-    </button>
+
+      <div className="px-6 py-5 space-y-6">
+        {question.answer && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Answer</h4>
+            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{question.answer}</p>
+          </div>
+        )}
+
+        {question.codeSnippet && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Code</h4>
+            <CodeBlock code={question.codeSnippet} language={question.codeLanguage || 'java'} />
+          </div>
+        )}
+
+        {question.explanation && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Explanation</h4>
+            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{question.explanation}</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

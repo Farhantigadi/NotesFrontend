@@ -17,10 +17,10 @@ export function QuestionDetailPage() {
   const questionId = Number(id);
 
   const { data: question, isLoading: questionLoading } = useQuestion(questionId);
-  const { data: subSection, isLoading: subSectionLoading } = useSubSection(question?.subSectionId || 0);
+  const { data: subSection } = useSubSection(question?.subSectionId || 0);
   const { data: siblingQuestions } = useQuestionsBySubSection(question?.subSectionId || 0);
   const deleteMutation = useDeleteQuestion();
-  const updateMutation = useUpdateQuestion(questionId);
+  const updateMutation = useUpdateQuestion();
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -35,7 +35,7 @@ export function QuestionDetailPage() {
   };
 
   const handleFormSubmit = async (data) => {
-    await updateMutation.mutateAsync(data);
+    await updateMutation.mutateAsync({ id: questionId, data });
     setIsEditDialogOpen(false);
   };
 
@@ -51,11 +51,11 @@ export function QuestionDetailPage() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [previousQuestion, nextQuestion, navigate]);
 
-  if (questionLoading || subSectionLoading) {
+  if (questionLoading) {
     return <Layout><LoadingSpinner /></Layout>;
   }
 
-  if (!question || !subSection) {
+  if (!question) {
     return (
       <Layout>
         <div className="text-center py-12">
@@ -65,16 +65,23 @@ export function QuestionDetailPage() {
     );
   }
 
+  console.log('[QUESTION PAGE] Question Object:', question);
+  console.log('[QUESTION PAGE] Title:', question?.title);
+  console.log('[QUESTION PAGE] Answer:', question?.answer);
+  console.log('[QUESTION PAGE] Code:', question?.codeSnippet);
+  console.log('[QUESTION PAGE] Explanation:', question?.explanation);
+  console.log('[QUESTION PAGE] codeLanguage:', question?.codeLanguage);
+
   return (
     <Layout>
       <article className="max-w-4xl mx-auto">
         <div className="text-sm text-gray-600 flex items-center gap-2 mb-8">
           <button onClick={() => navigate('/sections')} className="hover:text-accent">Sections</button>
           <ChevronRight size={16} />
-          <span>{subSection.mainSectionTitle}</span>
+          <span>{question.subSectionTitle || subSection?.mainSectionTitle || ''}</span>
           <ChevronRight size={16} />
-          <button onClick={() => navigate(`/subsections/${subSection.id}`)} className="hover:text-accent">
-            {subSection.title}
+          <button onClick={() => navigate(`/subsections/${question.subSectionId}`)} className="hover:text-accent">
+            {subSection?.title || ''}
           </button>
           <ChevronRight size={16} />
           <span className="text-accent font-semibold">{question.title}</span>
@@ -94,24 +101,39 @@ export function QuestionDetailPage() {
           )}
         </div>
 
-        {question.answer && (
+        {question.answer ? (
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-accent mb-4">Answer</h2>
             <div className="content-area-bg rounded-lg p-6 border border-gray-200 reading-content">{question.answer}</div>
           </section>
+        ) : (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-accent mb-4">Answer</h2>
+            <div className="content-area-bg rounded-lg p-6 border border-gray-200 text-gray-400 italic">No Answer Available</div>
+          </section>
         )}
 
-        {question.codeSnippet && (
+        {question.codeSnippet ? (
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-accent mb-4">Code Example</h2>
             <CodeBlock code={question.codeSnippet} language={question.codeLanguage || 'javascript'} />
           </section>
+        ) : (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-accent mb-4">Code Example</h2>
+            <div className="content-area-bg rounded-lg p-6 border border-gray-200 text-gray-400 italic">No Code Example Available</div>
+          </section>
         )}
 
-        {question.explanation && (
+        {question.explanation ? (
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-accent mb-4">Explanation</h2>
             <div className="content-area-bg rounded-lg p-6 border border-gray-200 reading-content">{question.explanation}</div>
+          </section>
+        ) : (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-accent mb-4">Explanation</h2>
+            <div className="content-area-bg rounded-lg p-6 border border-gray-200 text-gray-400 italic">No Explanation Available</div>
           </section>
         )}
 
@@ -147,6 +169,14 @@ export function QuestionDetailPage() {
         onCancel={() => setDeleteConfirm(false)}
         isLoading={deleteMutation.isPending}
       />
+
+      {/* DEBUG PANEL — remove before production */}
+      <div style={{ position: 'fixed', bottom: 16, right: 16, zIndex: 9999, background: '#1e1e1e', color: '#d4d4d4', padding: '12px 16px', borderRadius: 8, fontSize: 11, maxWidth: 420, fontFamily: 'monospace', boxShadow: '0 4px 20px rgba(0,0,0,0.4)', maxHeight: 340, overflowY: 'auto' }}>
+        <div style={{ fontWeight: 700, marginBottom: 6, color: '#ffd700' }}>🐛 DEBUG DATA — Raw Question Object</div>
+        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+          {JSON.stringify(question, null, 2)}
+        </pre>
+      </div>
     </Layout>
   );
 }

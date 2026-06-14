@@ -12,7 +12,10 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.response.use(
   (response) => {
+    console.log('[AXIOS] Raw response for', response.config.method?.toUpperCase(), response.config.url);
+    console.log('[AXIOS] response.data:', JSON.stringify(response.data, null, 2));
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      console.log('[AXIOS] Unwrapped → response.data.data:', response.data.data);
       return response.data.data;
     }
     return response.data;

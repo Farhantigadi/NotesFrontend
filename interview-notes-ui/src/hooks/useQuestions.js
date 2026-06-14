@@ -30,17 +30,22 @@ export const useCreateQuestion = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data) => questionsApi.createQuestion(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[QUESTION] Mutation Success — created question:', data);
+      console.log('[QUESTION] Saved Fields → title:', data?.title, '| answer:', data?.answer, '| codeSnippet:', data?.codeSnippet, '| explanation:', data?.explanation);
       queryClient.invalidateQueries({ queryKey: [QUESTIONS_QUERY_KEY] });
+    },
+    onError: (error) => {
+      console.error('[QUESTION] Mutation Error:', error);
     },
   });
 };
 
-export const useUpdateQuestion = (id) => {
+export const useUpdateQuestion = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data) => questionsApi.updateQuestion(id, data),
-    onSuccess: (updatedQuestion) => {
+    mutationFn: ({ id, data }) => questionsApi.updateQuestion(id, data),
+    onSuccess: (updatedQuestion, { id }) => {
       queryClient.setQueryData([QUESTIONS_QUERY_KEY, id], updatedQuestion);
       queryClient.invalidateQueries({ queryKey: [QUESTIONS_QUERY_KEY] });
     },

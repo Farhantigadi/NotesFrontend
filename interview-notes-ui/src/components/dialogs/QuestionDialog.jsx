@@ -69,7 +69,19 @@ export function QuestionDialog({
   }, [isOpen, question, preselectedSubSectionId, reset]);
 
   const handleFormSubmit = async (data) => {
-    await onSubmit(data);
+    console.log('[QUESTION] Save button clicked');
+    console.log('[QUESTION] Form Values:', data);
+    console.log('[QUESTION] Form Fields → title:', data.title, '| answer:', data.answer, '| codeSnippet:', data.codeSnippet, '| codeLanguage:', data.codeLanguage, '| explanation:', data.explanation, '| subSectionId:', data.subSectionId);
+    const payload = {
+      title: data.title,
+      answer: data.answer || null,
+      codeSnippet: data.codeSnippet || null,
+      codeLanguage: data.codeLanguage || null,
+      explanation: data.explanation || null,
+      subSectionId: Number(data.subSectionId),
+    };
+    console.log('[QUESTION] Payload Being Sent:', payload);
+    await onSubmit(payload);
     reset();
   };
 
@@ -148,8 +160,7 @@ export function QuestionDialog({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+            <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Code Language
                 </label>
@@ -165,19 +176,6 @@ export function QuestionDialog({
                   ))}
                 </select>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Display Order
-                </label>
-                <input
-                  {...register('displayOrder', { valueAsNumber: true })}
-                  type="number"
-                  placeholder="Order"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
