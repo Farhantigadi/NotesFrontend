@@ -43,7 +43,7 @@ export function QuestionDetailPage() {
   const handleDeleteCode = async () => {
     await updateMutation.mutateAsync({
       id: questionId,
-      data: { title: question.title, subSectionId: question.subSectionId, answer: question.answer || '', codeSnippet: '', codeLanguage: '', explanation: question.explanation || '', displayOrder: question.displayOrder }
+      data: { title: question.title, subSectionId: question.subSectionId, answer: question.answer || '', codeBlocks: null, explanation: question.explanation || '', displayOrder: question.displayOrder }
     });
     setDeleteCodeConfirm(false);
   };
@@ -103,11 +103,11 @@ export function QuestionDetailPage() {
               <button onClick={() => setIsEditDialogOpen(true)} className="p-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Edit Question">
                 <Edit2 size={20} />
               </button>
-              {question.codeSnippet && (
+              {question.codeBlocks && (
                 <button
                   onClick={() => setDeleteCodeConfirm(true)}
                   className="p-3 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Delete Code"
+                  title="Delete All Codes"
                 >
                   <Trash2 size={20} />
                   <span style={{ fontSize: '10px', display: 'block', lineHeight: 1, marginTop: '2px' }}>Code</span>
@@ -149,12 +149,20 @@ export function QuestionDetailPage() {
           );
         })()}
 
-        {question.codeSnippet && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-accent mb-4">Code</h2>
-            <CodeBlock code={question.codeSnippet} language={question.codeLanguage || 'javascript'} />
-          </section>
-        )}
+        {(() => {
+          const blocks = (() => { try { return JSON.parse(question.codeBlocks || '[]'); } catch { return []; } })();
+          if (!blocks.length) return null;
+          return (
+            <section className="mb-12">
+              <h2 className="text-2xl font-bold text-accent mb-4">Code</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {blocks.map((block, i) => (
+                  <CodeBlock key={i} code={block.code} language={block.language || 'javascript'} />
+                ))}
+              </div>
+            </section>
+          );
+        })()}
 
         {question.explanation ? (
           <section className="mb-12">

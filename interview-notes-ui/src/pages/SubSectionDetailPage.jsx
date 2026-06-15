@@ -55,8 +55,7 @@ export function SubSectionDetailPage() {
         title: q.title,
         subSectionId: q.subSectionId,
         answer: q.answer || '',
-        codeSnippet: q.codeSnippet || '',
-        codeLanguage: q.codeLanguage || '',
+        codeBlocks: q.codeBlocks || null,
         explanation: q.explanation || '',
         imageUrl: q.imageUrl || null,
         imageWidth: q.imageWidth,
@@ -79,7 +78,7 @@ export function SubSectionDetailPage() {
       const q = questions.find(q => q.id === deleteCodeConfirm.id);
       await updateMutation.mutateAsync({
         id: deleteCodeConfirm.id,
-        data: { title: q.title, subSectionId: q.subSectionId, answer: q.answer || '', codeSnippet: '', codeLanguage: '', explanation: q.explanation || '', displayOrder: q.displayOrder }
+        data: { title: q.title, subSectionId: q.subSectionId, answer: q.answer || '', codeBlocks: null, explanation: q.explanation || '', displayOrder: q.displayOrder }
       });
       setDeleteCodeConfirm({ isOpen: false, id: null });
     }
@@ -237,8 +236,6 @@ export function SubSectionDetailPage() {
 }
 
 function QuestionItem({ question, index, total, onEdit, onDelete, onDeleteCode, onMoveUp, onMoveDown, isEditMode, isReordering }) {
-  const [codeExpanded, setCodeExpanded] = useState(false);
-
   return (
     <article style={{ paddingTop: '32px', paddingBottom: '32px', borderBottom: index < total - 1 ? '1px solid var(--paper-border)' : 'none' }}>
 
@@ -248,8 +245,8 @@ function QuestionItem({ question, index, total, onEdit, onDelete, onDeleteCode, 
           <button onClick={onMoveUp} disabled={index === 0 || isReordering} className="btn-ghost p-1" style={{ opacity: index === 0 ? 0.3 : 1 }}><ChevronUp size={13} /></button>
           <button onClick={onMoveDown} disabled={index === total - 1 || isReordering} className="btn-ghost p-1" style={{ opacity: index === total - 1 ? 0.3 : 1 }}><ChevronDown size={13} /></button>
           <button onClick={onEdit} className="btn-ghost p-1"><Edit2 size={13} /></button>
-          {question.codeSnippet && (
-            <button onClick={onDeleteCode} className="btn-ghost p-1" style={{ color: 'var(--danger)', opacity: 0.6 }} title="Delete Code"><Trash2 size={13} /></button>
+          {question.codeBlocks && (
+            <button onClick={onDeleteCode} className="btn-ghost p-1" style={{ color: 'var(--danger)', opacity: 0.6 }} title="Delete All Codes"><Trash2 size={13} /></button>
           )}
           <button onClick={onDelete} className="btn-ghost p-1" style={{ color: 'var(--danger)' }} title="Delete Question"><Trash2 size={13} /></button>
         </div>
@@ -272,18 +269,18 @@ function QuestionItem({ question, index, total, onEdit, onDelete, onDeleteCode, 
         </p>
       )}
 
-      {/* Code block */}
-      {question.codeSnippet && (
-        <div style={{ marginBottom: '20px' }}>
-          <CodeBlock
-            code={question.codeSnippet}
-            language={question.codeLanguage || 'java'}
-            maxLines={codeExpanded ? undefined : 7}
-            expanded={codeExpanded}
-            onToggle={() => setCodeExpanded(v => !v)}
-          />
-        </div>
-      )}
+      {/* Code blocks */}
+      {(() => {
+        const blocks = (() => { try { return JSON.parse(question.codeBlocks || '[]'); } catch { return []; } })();
+        if (!blocks.length) return null;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+            {blocks.map((block, i) => (
+              <CodeBlock key={i} code={block.code} language={block.language || 'java'} />
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Explanation */}
       {question.explanation && (
