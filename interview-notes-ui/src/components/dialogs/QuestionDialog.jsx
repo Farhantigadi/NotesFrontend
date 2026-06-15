@@ -111,6 +111,7 @@ export function QuestionDialog({
       localStorage.setItem(`q-diagram-${savedId}`, JSON.stringify(diagramData));
     }
     reset();
+    onClose();
   };
 
   const handleImageChange = (file) => {

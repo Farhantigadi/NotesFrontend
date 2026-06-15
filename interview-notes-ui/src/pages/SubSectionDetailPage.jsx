@@ -29,6 +29,7 @@ export function SubSectionDetailPage() {
   const [editingId, setEditingId]         = useState(null);
   const [isDialogOpen, setIsDialogOpen]   = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
+  const [deleteCodeConfirm, setDeleteCodeConfirm] = useState({ isOpen: false, id: null });
   const [deleteTopicConfirm, setDeleteTopicConfirm] = useState(false);
 
   const sortedQuestions = useMemo(() => {
@@ -39,6 +40,7 @@ export function SubSectionDetailPage() {
   const handleAddQuestion    = () => { setEditingId(null); setIsDialogOpen(true); };
   const handleEditQuestion   = (id) => { setEditingId(id); setIsDialogOpen(true); };
   const handleDeleteQuestion = (id) => setDeleteConfirm({ isOpen: true, id });
+  const handleDeleteCode     = (id) => setDeleteCodeConfirm({ isOpen: true, id });
 
   const handleMove = (index, direction) => {
     const list = [...sortedQuestions];
@@ -57,6 +59,17 @@ export function SubSectionDetailPage() {
     if (deleteConfirm.id) {
       await deleteMutation.mutateAsync(deleteConfirm.id);
       setDeleteConfirm({ isOpen: false, id: null });
+    }
+  };
+
+  const handleConfirmDeleteCode = async () => {
+    if (deleteCodeConfirm.id) {
+      const q = questions.find(q => q.id === deleteCodeConfirm.id);
+      await updateMutation.mutateAsync({
+        id: deleteCodeConfirm.id,
+        data: { title: q.title, subSectionId: q.subSectionId, answer: q.answer || '', codeSnippet: '', codeLanguage: '', explanation: q.explanation || '', displayOrder: q.displayOrder }
+      });
+      setDeleteCodeConfirm({ isOpen: false, id: null });
     }
   };
 
@@ -148,6 +161,7 @@ export function SubSectionDetailPage() {
                 onNavigate={() => navigate(`/questions/${question.id}`)}
                 onEdit={() => handleEditQuestion(question.id)}
                 onDelete={() => handleDeleteQuestion(question.id)}
+                onDeleteCode={() => handleDeleteCode(question.id)}
                 onMoveUp={() => handleMove(index, -1)}
                 onMoveDown={() => handleMove(index, 1)}
                 isEditMode={isEditMode}
@@ -188,6 +202,17 @@ export function SubSectionDetailPage() {
       />
 
       <ConfirmDialog
+        isOpen={deleteCodeConfirm.isOpen}
+        title="Delete Code"
+        message="Remove the code block from this question?"
+        confirmText="Delete"
+        isDangerous
+        onConfirm={handleConfirmDeleteCode}
+        onCancel={() => setDeleteCodeConfirm({ isOpen: false, id: null })}
+        isLoading={updateMutation.isPending}
+      />
+
+      <ConfirmDialog
         isOpen={deleteTopicConfirm}
         title="Delete Topic"
         message={`Delete "${subSection.title}"? All questions inside will also be permanently deleted.`}
@@ -201,7 +226,7 @@ export function SubSectionDetailPage() {
   );
 }
 
-function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, onMoveUp, onMoveDown, isEditMode, isReordering }) {
+function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, onDeleteCode, onMoveUp, onMoveDown, isEditMode, isReordering }) {
   const [codeExpanded, setCodeExpanded] = useState(false);
 
   return (
@@ -213,7 +238,10 @@ function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, on
           <button onClick={onMoveUp} disabled={index === 0 || isReordering} className="btn-ghost p-1" style={{ opacity: index === 0 ? 0.3 : 1 }}><ChevronUp size={13} /></button>
           <button onClick={onMoveDown} disabled={index === total - 1 || isReordering} className="btn-ghost p-1" style={{ opacity: index === total - 1 ? 0.3 : 1 }}><ChevronDown size={13} /></button>
           <button onClick={onEdit} className="btn-ghost p-1"><Edit2 size={13} /></button>
-          <button onClick={onDelete} className="btn-ghost p-1" style={{ color: 'var(--danger)' }}><Trash2 size={13} /></button>
+          {question.codeSnippet && (
+            <button onClick={onDeleteCode} className="btn-ghost p-1" style={{ color: 'var(--danger)', opacity: 0.6 }} title="Delete Code"><Trash2 size={13} /></button>
+          )}
+          <button onClick={onDelete} className="btn-ghost p-1" style={{ color: 'var(--danger)' }} title="Delete Question"><Trash2 size={13} /></button>
         </div>
       )}
 

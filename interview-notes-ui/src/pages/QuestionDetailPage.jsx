@@ -24,6 +24,7 @@ export function QuestionDetailPage() {
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteCodeConfirm, setDeleteCodeConfirm] = useState(false);
 
   const currentIndex = siblingQuestions?.findIndex((q) => q.id === questionId) ?? -1;
   const previousQuestion = currentIndex > 0 ? siblingQuestions[currentIndex - 1] : null;
@@ -37,6 +38,14 @@ export function QuestionDetailPage() {
   const handleFormSubmit = async (data) => {
     await updateMutation.mutateAsync({ id: questionId, data });
     setIsEditDialogOpen(false);
+  };
+
+  const handleDeleteCode = async () => {
+    await updateMutation.mutateAsync({
+      id: questionId,
+      data: { title: question.title, subSectionId: question.subSectionId, answer: question.answer || '', codeSnippet: '', codeLanguage: '', explanation: question.explanation || '', displayOrder: question.displayOrder }
+    });
+    setDeleteCodeConfirm(false);
   };
 
   useEffect(() => {
@@ -91,11 +100,22 @@ export function QuestionDetailPage() {
           <h1 className="text-5xl font-bold text-accent reading-content font-serif">{question.title}</h1>
           {isEditMode && (
             <div className="flex gap-2 ml-4">
-              <button onClick={() => setIsEditDialogOpen(true)} className="p-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
+              <button onClick={() => setIsEditDialogOpen(true)} className="p-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Edit Question">
                 <Edit2 size={20} />
               </button>
-              <button onClick={() => setDeleteConfirm(true)} className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+              {question.codeSnippet && (
+                <button
+                  onClick={() => setDeleteCodeConfirm(true)}
+                  className="p-3 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete Code"
+                >
+                  <Trash2 size={20} />
+                  <span style={{ fontSize: '10px', display: 'block', lineHeight: 1, marginTop: '2px' }}>Code</span>
+                </button>
+              )}
+              <button onClick={() => setDeleteConfirm(true)} className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Question">
                 <Trash2 size={20} />
+                <span style={{ fontSize: '10px', display: 'block', lineHeight: 1, marginTop: '2px' }}>Question</span>
               </button>
             </div>
           )}
@@ -128,6 +148,13 @@ export function QuestionDetailPage() {
             </section>
           );
         })()}
+
+        {question.codeSnippet && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-accent mb-4">Code</h2>
+            <CodeBlock code={question.codeSnippet} language={question.codeLanguage || 'javascript'} />
+          </section>
+        )}
 
         {question.explanation ? (
           <section className="mb-12">
@@ -172,6 +199,17 @@ export function QuestionDetailPage() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteConfirm(false)}
         isLoading={deleteMutation.isPending}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteCodeConfirm}
+        title="Delete Code"
+        message="Are you sure you want to remove the code block from this question?"
+        confirmText="Delete"
+        isDangerous
+        onConfirm={handleDeleteCode}
+        onCancel={() => setDeleteCodeConfirm(false)}
+        isLoading={updateMutation.isPending}
       />
 
       {/* DEBUG PANEL — remove before production */}
