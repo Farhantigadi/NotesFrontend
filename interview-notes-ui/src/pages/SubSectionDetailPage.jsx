@@ -50,7 +50,19 @@ export function SubSectionDetailPage() {
       let newOrder = i + 1;
       if (i === index) newOrder = swapIndex + 1;
       if (i === swapIndex) newOrder = index + 1;
-      return { id: q.id, title: q.title, subSectionId: q.subSectionId, displayOrder: newOrder };
+      return {
+        id: q.id,
+        title: q.title,
+        subSectionId: q.subSectionId,
+        answer: q.answer || '',
+        codeSnippet: q.codeSnippet || '',
+        codeLanguage: q.codeLanguage || '',
+        explanation: q.explanation || '',
+        imageUrl: q.imageUrl || null,
+        imageWidth: q.imageWidth,
+        imageAlign: q.imageAlign,
+        displayOrder: newOrder
+      };
     });
     reorderMutation.mutate(updates);
   };
@@ -85,8 +97,7 @@ export function SubSectionDetailPage() {
       const maxOrder = sortedQuestions.length > 0
         ? Math.max(...sortedQuestions.map(q => q.displayOrder ?? 0))
         : 0;
-      const saved = await createMutation.mutateAsync({ ...data, displayOrder: maxOrder + 1 });
-      return saved;
+      await createMutation.mutateAsync({ ...data, displayOrder: maxOrder + 1 });
     }
     setIsDialogOpen(false);
   };
@@ -158,7 +169,6 @@ export function SubSectionDetailPage() {
                 question={question}
                 index={index}
                 total={sortedQuestions.length}
-                onNavigate={() => navigate(`/questions/${question.id}`)}
                 onEdit={() => handleEditQuestion(question.id)}
                 onDelete={() => handleDeleteQuestion(question.id)}
                 onDeleteCode={() => handleDeleteCode(question.id)}
@@ -226,7 +236,7 @@ export function SubSectionDetailPage() {
   );
 }
 
-function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, onDeleteCode, onMoveUp, onMoveDown, isEditMode, isReordering }) {
+function QuestionItem({ question, index, total, onEdit, onDelete, onDeleteCode, onMoveUp, onMoveDown, isEditMode, isReordering }) {
   const [codeExpanded, setCodeExpanded] = useState(false);
 
   return (
@@ -250,12 +260,7 @@ function QuestionItem({ question, index, total, onNavigate, onEdit, onDelete, on
         <span style={{ fontFamily: SERIF, fontSize: '24px', fontWeight: 700, color: 'var(--accent-muted)', flexShrink: 0 }}>
           Q{index + 1}
         </span>
-        <h2
-          style={{ fontFamily: SERIF, fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35, letterSpacing: '-0.015em', cursor: 'pointer', margin: 0 }}
-          onClick={onNavigate}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-primary)'}
-        >
+        <h2 style={{ fontFamily: SERIF, fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35, letterSpacing: '-0.015em', margin: 0 }}>
           {question.title}
         </h2>
       </div>

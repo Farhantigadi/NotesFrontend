@@ -34,6 +34,7 @@ export function QuestionDialog({
   const [activeTab, setActiveTab] = useState('main');
   const [pendingImageFile, setPendingImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(question?.imageUrl || null);
+  const [isImageUrl, setIsImageUrl] = useState(!!(question?.imageUrl && !question?.imageUrl.startsWith('blob')));
   const [imageSettings, setImageSettings] = useState({
     width: question?.imageWidth ?? 100,
     align: question?.imageAlign ?? 'center',
@@ -73,6 +74,7 @@ export function QuestionDialog({
       });
       setImagePreview(question.imageUrl || null);
       setPendingImageFile(null);
+      setIsImageUrl(!!(question?.imageUrl));
       setImageSettings({ width: question.imageWidth ?? 100, align: question.imageAlign ?? 'center' });
     } else if (isOpen) {
       reset({
@@ -86,6 +88,7 @@ export function QuestionDialog({
       });
       setImagePreview(null);
       setPendingImageFile(null);
+      setIsImageUrl(false);
       setImageSettings({ width: 100, align: 'center' });
     }
   }, [isOpen, question, preselectedSubSectionId, reset]);
@@ -99,12 +102,14 @@ export function QuestionDialog({
       codeLanguage: data.codeLanguage || null,
       explanation: data.explanation || null,
       subSectionId: Number(data.subSectionId),
+      displayOrder: question?.displayOrder ?? data.displayOrder,
       imageWidth: imageSettings.width,
       imageAlign: imageSettings.align,
+      ...(isImageUrl && imagePreview ? { imageUrl: imagePreview } : {}),
     };
     const saved = await onSubmit(payload);
     const savedId = saved?.id || questionId;
-    if (savedId && pendingImageFile) {
+    if (savedId && pendingImageFile && !isImageUrl) {
       await uploadImageMutation.mutateAsync({ id: savedId, file: pendingImageFile });
     }
     if (savedId && diagramData) {
@@ -116,12 +121,19 @@ export function QuestionDialog({
 
   const handleImageChange = (file) => {
     setPendingImageFile(file);
+    setIsImageUrl(false);
     if (file) {
       const url = URL.createObjectURL(file);
       setImagePreview(url);
     } else {
       setImagePreview(null);
     }
+  };
+
+  const handleImageUrl = (url) => {
+    setImagePreview(url);
+    setIsImageUrl(true);
+    setPendingImageFile(null);
   };
 
   const handleDeleteImage = async () => {
@@ -230,6 +242,7 @@ export function QuestionDialog({
                   <ImageUploader
                     value={imagePreview ? { src: imagePreview } : null}
                     onFileChange={handleImageChange}
+                    onUrlChange={handleImageUrl}
                     onDelete={handleDeleteImage}
                     isDeleting={deleteImageMutation.isPending}
                     settings={imageSettings}

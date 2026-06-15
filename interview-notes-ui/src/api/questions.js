@@ -38,9 +38,8 @@ export const questionsApi = {
     return axiosInstance.delete(`/api/questions/${id}/image`);
   },
   reorderQuestions: async (updates) => {
-    // updates = [{ id, title, subSectionId, displayOrder }, ...]
-    return Promise.all(updates.map(({ id, title, subSectionId, displayOrder }) =>
-      axiosInstance.put(`/api/questions/${id}`, { title, subSectionId, displayOrder })
+    return Promise.all(updates.map((q) =>
+      axiosInstance.put(`/api/questions/${q.id}`, q)
     ));
   },
   deleteQuestion: async (id) => {

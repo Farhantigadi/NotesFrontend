@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Upload, X, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Upload, X, AlignLeft, AlignCenter, AlignRight, Link } from 'lucide-react';
 
 const PRESETS = [
   { label: 'S', value: 25 },
@@ -14,16 +14,24 @@ const ALIGNMENTS = [
   { value: 'right',  Icon: AlignRight },
 ];
 
-export function ImageUploader({ value, onFileChange, onDelete, isDeleting, settings, onSettingsChange }) {
+export function ImageUploader({ value, onFileChange, onUrlChange, onDelete, isDeleting, settings, onSettingsChange }) {
   const inputRef = useRef(null);
   const [width, setWidth]     = useState(settings?.width ?? 100);
   const [align, setAlign]     = useState(settings?.align ?? 'center');
+  const [tab, setTab]         = useState('upload');
+  const [urlInput, setUrlInput] = useState('');
 
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     onFileChange?.(file);
     if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const handleUrlApply = () => {
+    if (!urlInput.trim()) return;
+    onUrlChange?.(urlInput.trim());
+    setUrlInput('');
   };
 
   const updateWidth = (w) => {
@@ -41,15 +49,29 @@ export function ImageUploader({ value, onFileChange, onDelete, isDeleting, setti
   return (
     <div style={{ border: '1px solid #e0dbd2', borderRadius: '10px', overflow: 'hidden', background: '#faf9f7' }}>
 
-      {/* Toolbar row 1 — upload + delete */}
+      {/* Toolbar row 1 — tabs + actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderBottom: '1px solid #e0dbd2' }}>
-        <button type="button" onClick={() => inputRef.current.click()}
-          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #e0dbd2', background: '#fff', color: '#3c3836', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}
-          onMouseEnter={e => e.currentTarget.style.background = '#f5f0e8'}
-          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-        >
-          <Upload size={13} /> {value?.src ? 'Replace' : 'Upload Image'}
-        </button>
+
+        {/* Tab toggle */}
+        <div style={{ display: 'flex', gap: '3px', background: '#f0ede8', borderRadius: '7px', padding: '3px' }}>
+          {[{ id: 'upload', label: 'Upload' }, { id: 'url', label: 'URL' }].map(t => (
+            <button key={t.id} type="button" onClick={() => setTab(t.id)}
+              style={{ padding: '4px 12px', borderRadius: '5px', border: 'none', background: tab === t.id ? '#fff' : 'transparent', color: tab === t.id ? '#3c3836' : '#a8a29e', fontSize: '12px', fontWeight: tab === t.id ? 600 : 400, cursor: 'pointer', boxShadow: tab === t.id ? '0 1px 3px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.15s' }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'upload' && (
+          <button type="button" onClick={() => inputRef.current.click()}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #e0dbd2', background: '#fff', color: '#3c3836', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f5f0e8'}
+            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+          >
+            <Upload size={13} /> {value?.src ? 'Replace' : 'Upload Image'}
+          </button>
+        )}
         <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
 
         {value?.src && (
@@ -62,6 +84,27 @@ export function ImageUploader({ value, onFileChange, onDelete, isDeleting, setti
           </button>
         )}
       </div>
+
+      {/* URL input row */}
+      {tab === 'url' && (
+        <div style={{ display: 'flex', gap: '8px', padding: '10px 12px', borderBottom: '1px solid #e0dbd2', background: '#fff' }}>
+          <input
+            type="text"
+            placeholder="Paste image URL here..."
+            value={urlInput}
+            onChange={e => setUrlInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleUrlApply()}
+            style={{ flex: 1, padding: '7px 12px', border: '1px solid #e0dbd2', borderRadius: '6px', fontSize: '13px', color: '#1c1c1c', outline: 'none', fontFamily: 'inherit' }}
+          />
+          <button type="button" onClick={handleUrlApply}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '6px', border: 'none', background: '#92400e', color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#78350f'}
+            onMouseLeave={e => e.currentTarget.style.background = '#92400e'}
+          >
+            <Link size={13} /> Apply
+          </button>
+        </div>
+      )}
 
       {/* Toolbar row 2 — size + alignment (only when image exists) */}
       {value?.src && (
