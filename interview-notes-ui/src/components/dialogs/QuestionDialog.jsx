@@ -16,7 +16,7 @@ const questionSchema = z.object({
   subSectionId: z.number().min(1, 'SubSection is required'),
 });
 
-const codeLanguages = ['java', 'javascript', 'typescript', 'python', 'sql', 'go', 'rust', 'cpp', 'csharp'];
+const codeLanguages = ['java', 'javascript', 'typescript', 'python', 'sql', 'go', 'rust', 'cpp', 'csharp', 'other'];
 
 const parseCodeBlocks = (raw) => {
   if (!raw) return [];
@@ -222,11 +222,37 @@ export function QuestionDialog({
                     {codeBlocks.map((block, i) => (
                       <div key={i} style={{ border: '1px solid #313244', borderRadius: '8px', overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#181825', borderBottom: '1px solid #313244' }}>
-                          <select value={block.language} onChange={e => updateCodeBlock(i, 'language', e.target.value)}
-                            style={{ background: '#1e1e2e', border: '1px solid #313244', borderRadius: '5px', color: '#cdd6f4', fontSize: '12px', padding: '3px 8px', cursor: 'pointer' }}
-                          >
-                            {codeLanguages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
-                          </select>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <select
+                              value={codeLanguages.includes(block.language) ? block.language : 'other'}
+                              onChange={e => {
+                                if (e.target.value === 'other') {
+                                  updateCodeBlock(i, 'language', '');
+                                } else {
+                                  updateCodeBlock(i, 'language', e.target.value);
+                                }
+                              }}
+                              style={{ background: '#1e1e2e', border: '1px solid #313244', borderRadius: '5px', color: '#cdd6f4', fontSize: '12px', padding: '3px 8px', cursor: 'pointer' }}
+                            >
+                              {codeLanguages.map(lang => (
+                                <option key={lang} value={lang}>
+                                  {lang === 'other' ? 'Other...' : lang}
+                                </option>
+                              ))}
+                            </select>
+                            {(!codeLanguages.slice(0, -1).includes(block.language)) && (
+                              <input
+                                type="text"
+                                value={block.language}
+                                onChange={e => updateCodeBlock(i, 'language', e.target.value)}
+                                placeholder="Language name"
+                                autoFocus
+                                style={{ background: '#1e1e2e', border: '1px solid #45475a', borderRadius: '5px', color: '#cdd6f4', fontSize: '12px', padding: '3px 8px', width: '120px', outline: 'none' }}
+                                onFocus={e => e.target.style.borderColor = '#89b4fa'}
+                                onBlur={e => e.target.style.borderColor = '#45475a'}
+                              />
+                            )}
+                          </div>
                           <button type="button" onClick={() => removeCodeBlock(i)}
                             style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#f38ba8', fontSize: '12px', cursor: 'pointer', padding: '2px 6px', borderRadius: '4px' }}
                             onMouseEnter={e => e.currentTarget.style.background = '#3a1a1a'}
